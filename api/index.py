@@ -9,7 +9,7 @@ try:
     from app.core.config import get_settings, Settings
     results["config_module"] = "ok"
 except Exception as e:
-    results["config_module"] = str(e)
+    results["config_module"] = "err: " + str(e)
 
 try:
     from app.core.security import hash_password, verify_password
@@ -29,10 +29,21 @@ try:
 except Exception as e:
     results["user_model"] = "err: " + str(e)
 
-from fastapi import FastAPI
+try:
+    from app.api.router import api_router
+    results["api_router"] = "ok"
+except Exception as e:
+    results["api_router"] = "err: " + str(e)
 
-app = FastAPI()
+try:
+    from app.main import app
+    results["main_app"] = "ok"
+except Exception as e:
+    results["main_app"] = "err: " + str(e)
+    from fastapi import FastAPI
+    app = FastAPI()
 
-@app.get("/api/health")
-async def health():
+
+@app.get("/api/imports")
+async def import_results():
     return {"status": "ok", "imports": results}
