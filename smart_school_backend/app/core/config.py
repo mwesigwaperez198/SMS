@@ -1,7 +1,7 @@
 from functools import lru_cache
 from os import environ
 
-from pydantic import AnyHttpUrl, Field
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     default_currency_code: str = "UGX"
     default_timezone: str = "Africa/Kampala"
 
-    backend_cors_origins: list[AnyHttpUrl | str] = Field(default_factory=list)
+    backend_cors_origins: list[str] = Field(default_factory=list)
 
     initial_super_admin_email: str | None = None
     initial_super_admin_password: str | None = None
