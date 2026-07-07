@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Users, UserPlus, FileText, Upload, Search, Download } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
+import { Users, UserPlus, FileText, Upload, Search, Download, X } from "lucide-react";
 import type { ConnectedData } from "../api";
 
 interface SecretaryWorkspaceProps {
@@ -31,7 +31,7 @@ export function SecretaryWorkspace({ view, data, onViewChange }: SecretaryWorksp
       setSubmitMsg("Fill all required fields (*)");
       return;
     }
-    setSubmitMsg("✓ Admission submitted successfully!");
+    setSubmitMsg("Admission submitted successfully!");
     setForm(EMPTY_FORM);
     setTimeout(() => setSubmitMsg(""), 4000);
   };
@@ -43,17 +43,56 @@ export function SecretaryWorkspace({ view, data, onViewChange }: SecretaryWorksp
     s.className?.toLowerCase().includes(search.toLowerCase())
   );
 
+  // Build guardian-child map from student data
+  const guardianMap = new Map<string, { guardian: string; children: typeof data.students }>();
+  data.students.forEach(s => {
+    const key = s.guardian ?? "Unknown";
+    if (!guardianMap.has(key)) guardianMap.set(key, { guardian: key, children: [] });
+    guardianMap.get(key)!.children.push(s);
+  });
+  const guardianList = Array.from(guardianMap.values()).filter(g =>
+    !search || g.guardian.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // ---------- Import Students ----------
+  const [importFiles, setImportFiles] = useState<{ name: string; size: number; preview: Record<string, string>[] }[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const handleFiles = useCallback((files: FileList | File[]) => {
+    const newFiles: typeof importFiles = [];
+    for (const file of Array.from(files)) {
+      if (file.name.endsWith(".csv") || file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
+        newFiles.push({
+          name: file.name,
+          size: file.size,
+          preview: [
+            { "Admission No": "2025-001", "Full Name": "Sample Student", Gender: "Male", Class: "S1" },
+            { "Admission No": "2025-002", "Full Name": "Sample Student 2", Gender: "Female", Class: "S2" },
+          ],
+        });
+      }
+    }
+    setImportFiles(prev => [...prev, ...newFiles]);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+  }, [handleFiles]);
+
+  const removeFile = (index: number) => setImportFiles(prev => prev.filter((_, i) => i !== index));
+
   if (view === "Register Student") {
     return (
       <div className="office-layout">
-        {/* Left — form */}
         <div className="detail-panel">
           <div className="panel-title">
             <div className="panel-title-left"><p className="eyebrow">Admissions</p><strong>Student Intake Form</strong></div>
             <UserPlus size={18} />
           </div>
           <form onSubmit={handleSubmit}>
-            {/* Personal */}
             <div className="office-form">
               <p className="eyebrow" style={{paddingTop:4}}>Personal Information</p>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
@@ -89,9 +128,12 @@ export function SecretaryWorkspace({ view, data, onViewChange }: SecretaryWorksp
                 <label>Father's Name<input value={form.fatherName} onChange={set("fatherName")} placeholder="Full name" /></label>
                 <label>Mother's Name<input value={form.motherName} onChange={set("motherName")} placeholder="Full name" /></label>
               </div>
-              <label>Guardian Name (if applicable)<input value={form.guardianName} onChange={set("guardianName")} placeholder="Guardian full name" /></label>
+              <label>Guardian Name<input value={form.guardianName} onChange={set("guardianName")} placeholder="Guardian full name" required /></label>
+              <label>Guardian NIN<input placeholder="National ID number (required)" required /></label>
               <label>Contact Number *<input type="tel" value={form.contact} onChange={set("contact")} placeholder="+256 700 000000" required /></label>
               <label>Living Address *<textarea value={form.address} onChange={set("address")} placeholder="Full address" required /></label>
+              <label>Student NIN (if available)<input placeholder="Optional National ID" /></label>
+              <label>EMIS Number (if available)<input placeholder="Optional EMIS number" /></label>
 
               <p className="eyebrow" style={{paddingTop:8}}>Skills &amp; Expectations</p>
               <label>Current Skills<input value={form.currentSkills} onChange={set("currentSkills")} placeholder="e.g. Art, Music, Sports" /></label>
@@ -100,14 +142,14 @@ export function SecretaryWorkspace({ view, data, onViewChange }: SecretaryWorksp
 
               <p className="eyebrow" style={{paddingTop:8}}>Declaration</p>
               <p style={{fontSize:"0.82rem",color:"var(--muted)",margin:0}}>
-                I declare that the information provided is true and accurate. False information may lead to rejection or dismissal.
+                I declare that the information provided is true and accurate.
               </p>
               <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10}}>
                 <label>Guardian Signature<input value={form.guardianSignature} onChange={set("guardianSignature")} placeholder="Type full name" /></label>
                 <label>Date<input type="date" value={form.declarationDate} onChange={set("declarationDate")} /></label>
               </div>
 
-              {submitMsg && <p className={`notice-strip ${submitMsg.startsWith("✓") ? "success" : "error"}`}>{submitMsg}</p>}
+              {submitMsg && <p className={`notice-strip ${submitMsg.startsWith("Admission") ? "success" : "error"}`}>{submitMsg}</p>}
               <div style={{display:"flex",gap:10,paddingTop:4}}>
                 <button type="submit" className="tool-button primary"><UserPlus size={15}/>Submit Admission</button>
                 <button type="button" className="tool-button" onClick={() => setForm(EMPTY_FORM)}>Clear</button>
@@ -116,7 +158,6 @@ export function SecretaryWorkspace({ view, data, onViewChange }: SecretaryWorksp
           </form>
         </div>
 
-        {/* Right — recent admissions */}
         <div className="list-panel">
           <div className="panel-title"><strong style={{fontSize:"0.9rem"}}>Recent Admissions</strong></div>
           <div className="stack-list">
@@ -136,7 +177,7 @@ export function SecretaryWorkspace({ view, data, onViewChange }: SecretaryWorksp
     );
   }
 
-  if (view === "Student Profiles" || view === "Import Students" || view === "Guardians") {
+  if (view === "Student Profiles") {
     return (
       <div className="content-grid">
         <div className="table-panel">
@@ -163,6 +204,115 @@ export function SecretaryWorkspace({ view, data, onViewChange }: SecretaryWorksp
                 {filteredStudents.length === 0 && <tr><td colSpan={7} className="empty-state">No students found</td></tr>}
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (view === "Import Students") {
+    return (
+      <div className="content-grid">
+        <div className="table-panel">
+          <div className="panel-title">
+            <strong style={{fontSize:"0.9rem"}}>Import Students</strong>
+            <Upload size={18} />
+          </div>
+          <div
+            className={`import-dropzone ${isDragOver ? "drag-over" : ""}`}
+            onDragOver={e => { e.preventDefault(); setIsDragOver(true); }}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Upload size={40} />
+            <p><strong>Click to browse</strong> or drag & drop files here</p>
+            <span style={{fontSize:"0.82rem",color:"var(--muted)"}}>Supports .csv, .xlsx, .xls</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              style={{display:"none"}}
+              onChange={e => e.target.files && handleFiles(e.target.files)}
+              multiple
+            />
+          </div>
+
+          {importFiles.length > 0 && (
+            <div style={{padding:"12px 16px",display:"grid",gap:8}}>
+              {importFiles.map((f, i) => (
+                <div key={i} className="import-file-card">
+                  <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10}}>
+                      <FileText size={18} style={{color:"var(--primary)"}} />
+                      <div>
+                        <strong style={{fontSize:"0.88rem"}}>{f.name}</strong>
+                        <br /><span style={{fontSize:"0.78rem",color:"var(--muted)"}}>{(f.size / 1024).toFixed(1)} KB · {f.preview.length} records</span>
+                      </div>
+                    </div>
+                    <button className="tool-button" style={{minHeight:30,minWidth:30,padding:0}} onClick={() => removeFile(i)}><X size={14}/></button>
+                  </div>
+                  <div className="table-wrap" style={{marginTop:8}}>
+                    <table>
+                      <thead><tr>{Object.keys(f.preview[0]).map(k => <th key={k}>{k}</th>)}</tr></thead>
+                      <tbody>
+                        {f.preview.map((row, ri) => (
+                          <tr key={ri}>
+                            {Object.values(row).map((v, ci) => <td key={ci}>{v}</td>)}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style={{display:"flex",gap:8,justifyContent:"flex-end",marginTop:8}}>
+                    <button className="tool-button primary"><Upload size={14}/> Import All</button>
+                    <button className="tool-button">Validate Only</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (view === "Guardians") {
+    return (
+      <div className="content-grid">
+        <div className="table-panel">
+          <div className="office-filters">
+            <label><Search size={15}/><input placeholder="Search guardian name…" value={search} onChange={e => setSearch(e.target.value)} /></label>
+            <span style={{fontSize:"0.82rem",color:"var(--muted)"}}>{guardianList.length} guardians</span>
+          </div>
+          <div style={{display:"grid",gap:12,padding:16}}>
+            {guardianList.map(g => (
+              <div key={g.guardian} className="import-file-card">
+                <div className="panel-title" style={{padding:"10px 12px"}}>
+                  <div>
+                    <strong style={{fontSize:"0.9rem"}}>{g.guardian}</strong>
+                    <span style={{fontSize:"0.78rem",color:"var(--muted)",marginLeft:10}}>{g.children.length} {g.children.length === 1 ? "child" : "children"}</span>
+                  </div>
+                </div>
+                <div className="table-wrap">
+                  <table>
+                    <thead><tr><th>Adm No</th><th>Student Name</th><th>Gender</th><th>Class</th><th>Status</th></tr></thead>
+                    <tbody>
+                      {g.children.map(c => (
+                        <tr key={c.admissionNo}>
+                          <td><code>{c.admissionNo}</code></td>
+                          <td><strong>{c.name}</strong></td>
+                          <td>{c.gender}</td>
+                          <td>{c.className}</td>
+                          <td><span className={`badge ${c.status === "Active" ? "success" : "warning"}`}>{c.status}</span></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
+            {guardianList.length === 0 && <div className="empty-state">No guardians found</div>}
           </div>
         </div>
       </div>
