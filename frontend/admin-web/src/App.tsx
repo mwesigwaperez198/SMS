@@ -267,7 +267,7 @@ interface AdminWorkspaceFullProps {
 
 function AdminWorkspaceFull(props: AdminWorkspaceFullProps) {
   if (props.view === "Approvals") return <ApprovalsView data={props.data} onApprove={props.onApprove} />;
-  if (props.view === "Notifications") return <NotificationsView data={props.data} />;
+  if (props.view === "Notifications") return <NotificationsView data={props.data} roleKey="admin" />;
   if (props.view === "Students") return <StudentsView data={props.data} />;
   if (props.view === "Staff") return <StaffView data={props.data} />;
   if (props.view === "Finance") return <FinanceWorkspace data={props.data} onShareFinance={props.onShareFinance} />;
@@ -411,11 +411,45 @@ function ApprovalsView({ data, onApprove }: { data: ConnectedData; onApprove: (a
   );
 }
 
-function NotificationsView({ data }: { data: ConnectedData }) {
+function NotificationsView({ data, roleKey }: { data: ConnectedData; roleKey: string }) {
+  const [filter, setFilter] = useState<"all" | "info" | "warning" | "high">("all");
+  const filtered = filter === "all" ? data.notifications : data.notifications.filter(n => n.severity.toLowerCase() === filter);
+  const severityCounts = {
+    all: data.notifications.length,
+    high: data.notifications.filter(n => n.severity === "High").length,
+    warning: data.notifications.filter(n => n.severity === "Warning" || n.severity === "Medium").length,
+    info: data.notifications.filter(n => n.severity === "Info" || n.severity === "Low").length,
+  };
+  const roleLabel = roleKey.charAt(0).toUpperCase() + roleKey.slice(1).replace("-", " ");
   return (
-    <section className="panel">
-      <PanelTitle eyebrow="Notifications center" title="Approvals, red flags, attendance and finance alerts" />
-      <DataTable columns={notificationColumns} rows={data.notifications} />
+    <section className="content-grid">
+      <section className="panel">
+        <PanelTitle eyebrow={`${roleLabel} Notifications`} title="Alerts, approvals and system messages" />
+        <div className="office-filters">
+          {(["all", "high", "warning", "info"] as const).map(s => (
+            <button key={s} className={`tool-button ${filter === s ? "primary" : ""}`} onClick={() => setFilter(s)}>
+              {s === "all" ? "All" : s.charAt(0).toUpperCase() + s.slice(1)}
+              <span className={`badge ${s === "high" ? "error" : s === "warning" ? "warning" : "info"}`} style={{marginLeft:6}}>{severityCounts[s]}</span>
+            </button>
+          ))}
+        </div>
+        {filtered.length === 0 ? (
+          <p className="empty-state">No {filter !== "all" ? filter : ""} notifications</p>
+        ) : (
+          <div style={{display:"grid",gap:8,padding:"8px 0"}}>
+            {filtered.map(n => (
+              <div key={n.id} className="list-row">
+                <div className="dot" style={{background: n.severity === "High" ? "#ef4444" : n.severity === "Medium" || n.severity === "Warning" ? "#f59e0b" : "#10b981"}} />
+                <div>
+                  <strong style={{fontSize:"0.9rem"}}>{n.title}</strong>
+                  <br /><span style={{fontSize:"0.78rem",color:"var(--muted)"}}>{n.message} · {n.type}</span>
+                </div>
+                <span className={`badge ${n.severity === "High" ? "error" : n.severity === "Medium" || n.severity === "Warning" ? "warning" : "info"}`}>{n.severity}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </section>
   );
 }
