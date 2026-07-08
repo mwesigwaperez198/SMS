@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     default_country: str = "Uganda"
     default_currency_code: str = "UGX"
     default_timezone: str = "Africa/Kampala"
+    two_factor_issuer: str = "NOVARA School"
 
     backend_cors_origins: list[str] = Field(default_factory=list)
 

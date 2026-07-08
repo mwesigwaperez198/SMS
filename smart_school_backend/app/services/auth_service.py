@@ -157,3 +157,54 @@ def reset_password(
     user.password_hash = hash_password(new_password)
     db.add(user)
     db.commit()
+
+
+def generate_totp_secret(user: User) -> tuple[str, str, str]:
+    import pyotp
+    secret = pyotp.random_base32()
+    issuer = "NOVARA School"
+    uri = pyotp.totp.TOTP(secret).provisioning_uri(
+        name=user.email, issuer_name=issuer
+    )
+    return secret, uri, secret
+
+
+def verify_totp_code(secret: str, code: str) -> bool:
+    import pyotp
+    totp = pyotp.TOTP(secret)
+    return totp.verify(code, valid_window=1)
+
+
+def enable_2fa(db: Session, user: User, code: str) -> str:
+    if not user.totp_secret:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="2FA not initialized. Generate a secret first.",
+        )
+    if not verify_totp_code(user.totp_secret, code):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid verification code",
+        )
+    user.is_2fa_enabled = True
+    db.add(user)
+    db.commit()
+    return "Two-factor authentication enabled."
+
+
+def disable_2fa(db: Session, user: User, code: str) -> str:
+    if not user.is_2fa_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="2FA is not enabled",
+        )
+    if not verify_totp_code(user.totp_secret, code):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid verification code",
+        )
+    user.is_2fa_enabled = False
+    user.totp_secret = None
+    db.add(user)
+    db.commit()
+    return "Two-factor authentication disabled."

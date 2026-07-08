@@ -43,5 +43,29 @@ class MessageResponse(BaseModel):
     detail: str
 
 
+class TwoFactorSetupResponse(BaseModel):
+    secret: str
+    qr_uri: str
+    manual_code: str
+
+
+class TwoFactorVerifyRequest(BaseModel):
+    code: str = Field(min_length=6, max_length=6)
+
+
+class TwoFactorLoginResponse(BaseModel):
+    requires_2fa: bool = True
+    temp_token: str
+
+
+class TwoFactorLoginVerifyRequest(BaseModel):
+    temp_token: str
+    code: str = Field(min_length=6, max_length=6)
+
+
+class TwoFactorStatusResponse(BaseModel):
+    is_2fa_enabled: bool
+
+
 class ProfileResponse(BaseModel):
     user: UserRead

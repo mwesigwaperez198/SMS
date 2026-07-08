@@ -73,3 +73,15 @@ def decode_access_token(token: str) -> dict[str, Any] | None:
 
 def decode_refresh_token(token: str) -> dict[str, Any] | None:
     return decode_token(token, expected_type="refresh")
+
+
+def create_temp_token(subject: str) -> str:
+    return _create_token(
+        subject=subject,
+        expires_delta=timedelta(minutes=5),
+        token_type="temp_2fa",
+    )
+
+
+def decode_temp_token(token: str) -> dict[str, Any] | None:
+    return decode_token(token, expected_type="temp_2fa")

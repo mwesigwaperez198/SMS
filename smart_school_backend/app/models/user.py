@@ -31,6 +31,9 @@ class User(Base):
     # Password reset fields
     reset_code: Mapped[str | None] = mapped_column(String(6), nullable=True)
     reset_code_expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # 2FA fields
+    totp_secret: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    is_2fa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
