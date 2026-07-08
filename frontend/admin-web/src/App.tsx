@@ -9,17 +9,21 @@ import {
   clearSessionTokens,
   loadConnectedData,
   login,
+  mapUserToSession,
   resetPassword,
   sendSmsBatch,
   shareFinanceDocument,
   shareRequestedBooks
 } from "./api";
-import type { ConnectedData, Session } from "./api";
+import type { ConnectedData, Session, TwoFactorChallenge } from "./api";
 import { AppShell } from "./components/AppShell";
 import { DataTable } from "./components/DataTable";
 import { LandingPage } from "./components/LandingPage";
 import { LoginScreen } from "./components/LoginScreen";
 import { ForgotPasswordScreen } from "./components/ForgotPasswordScreen";
+import { RegisterSchoolScreen } from "./components/RegisterSchoolScreen";
+import { SignUpScreen } from "./components/SignUpScreen";
+import { TwoFactorSetup } from "./components/TwoFactorSetup";
 import { StatusBadge } from "./components/StatusBadge";
 import { roles } from "./data/mockData";
 import type { RoleKey } from "./types";
@@ -111,6 +115,9 @@ function App() {
   const [showLanding, setShowLanding] = useState(true);
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
+  const [showSignUp, setShowSignUp] = useState(false);
+  const [twoFactorChallenge, setTwoFactorChallenge] = useState<TwoFactorChallenge | null>(null);
 
   const activeRole = useMemo(() => roles.find((role) => role.key === roleKey) ?? roles[1], [roleKey]);
 
@@ -145,8 +152,14 @@ function App() {
   const handleLogin = async (email: string, password: string) => {
     setLoading(true);
     setConnectionError(null);
+    setTwoFactorChallenge(null);
     try {
-      const nextSession = await login(email, password);
+      const result = await login(email, password);
+      if ("requires_2fa" in result) {
+        setTwoFactorChallenge(result as TwoFactorChallenge);
+        return;
+      }
+      const nextSession = result as Session;
       setSession(nextSession);
       setRoleKey(nextSession.user.role_key);
       setView("Home");
@@ -182,7 +195,26 @@ function App() {
     if (showForgotPassword) {
       return <ForgotPasswordScreen onBack={() => setShowForgotPassword(false)} />;
     }
-    return <LoginScreen loading={loading} error={connectionError} onLogin={handleLogin} onSession={handleSession} onForgotPassword={() => setShowForgotPassword(true)} />;
+    if (showRegister) {
+      return <RegisterSchoolScreen onBack={() => setShowRegister(false)} />;
+    }
+    if (showSignUp) {
+      return <SignUpScreen onBack={() => setShowSignUp(false)} onComplete={() => { setShowSignUp(false); }} />;
+    }
+    if (twoFactorChallenge) {
+      return <LoginScreen loading={false} error={null} onLogin={handleLogin} onSession={handleSession} twoFactorChallenge={twoFactorChallenge} onClearChallenge={() => setTwoFactorChallenge(null)} />;
+    }
+    return (
+      <LoginScreen
+        loading={loading}
+        error={connectionError}
+        onLogin={handleLogin}
+        onSession={handleSession}
+        onForgotPassword={() => setShowForgotPassword(true)}
+        onSwitchToRegister={() => setShowRegister(true)}
+        onSwitchToSignUp={() => setShowSignUp(true)}
+      />
+    );
   }
 
   return (
@@ -781,6 +813,9 @@ function ProfileModal({ session, data, roleKey, onClose }: { session: Session; d
           ))}
         </div>
 
+        <div style={{marginTop:20,borderTop:"1px solid rgba(255,255,255,0.08)",paddingTop:16}}>
+          <TwoFactorSetup />
+        </div>
         <p style={{color:"var(--muted)",fontSize:"0.82rem",marginTop:20,marginBottom:0}}>
           Logged in since this session · Role-based dashboard active
         </p>

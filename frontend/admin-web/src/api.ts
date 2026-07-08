@@ -114,28 +114,21 @@ export interface Session {
   };
 }
 
-const roleMap: Record<number, RoleKey> = {
+export const roleMap: Record<number, RoleKey> = {
   1: "super-admin", 2: "admin", 3: "teacher",
   4: "parent", 5: "student", 6: "bursar", 7: "secretary", 8: "librarian"
 };
 
-const roleLabels: Record<RoleKey, string> = {
+export const roleLabels: Record<RoleKey, string> = {
   "super-admin": "Super Admin", admin: "Admin", teacher: "Teacher",
   parent: "Parent", student: "Student", bursar: "Bursar",
   secretary: "Secretary", librarian: "Librarian"
 };
 
-export async function login(email: string, password: string): Promise<Session> {
-  const result = await apiRequest<{
-    access_token: string;
-    refresh_token: string;
-    user: { id: number; name: string; email: string; role_id: number; school_id: number | null };
-  }>("/api/v1/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
-
+export function mapUserToSession(result: { access_token: string; refresh_token: string; user: { id: number; name: string; email: string; role_id: number; school_id: number | null } }): Session {
   const roleKey = roleMap[result.user.role_id] ?? "admin";
   sessionStorage.setItem("novara_token", result.access_token);
   sessionStorage.setItem("novara_refresh_token", result.refresh_token);
-
   return {
     token: result.access_token,
     refreshToken: result.refresh_token,
@@ -147,6 +140,24 @@ export async function login(email: string, password: string): Promise<Session> {
       school: "NOVARA School"
     }
   };
+}
+
+export interface TwoFactorChallenge {
+  requires_2fa: true;
+  temp_token: string;
+}
+
+export async function login(email: string, password: string): Promise<Session | TwoFactorChallenge> {
+  const result = await apiRequest<any>("/api/v1/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+
+  if (result.requires_2fa) {
+    return { requires_2fa: true, temp_token: result.temp_token };
+  }
+
+  return mapUserToSession(result);
 }
 
 export function clearSessionTokens(): void {
@@ -395,5 +406,70 @@ export async function sendRoleNotification(roleId: number, title: string, messag
   await apiRequest("/api/v1/notifications/role", {
     method: "POST",
     body: JSON.stringify({ role_id: roleId, title, message })
+  });
+}
+
+// ===================== Registration =====================
+
+export async function registerSchool(payload: {
+  school_name: string;
+  admin_name: string;
+  admin_email: string;
+  admin_phone: string;
+  address?: string;
+  payment_method: "mobile_money" | "bank_account";
+  payment_details: string;
+}): Promise<{ id: number; message: string }> {
+  return apiRequest("/api/v1/registration/register-school", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function completeRegistration(payload: {
+  key: string;
+  email: string;
+  password: string;
+  full_name: string;
+  phone?: string;
+}): Promise<{ message: string; school_name: string; school_code: string }> {
+  return apiRequest("/api/v1/registration/complete", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+// ===================== 2FA =====================
+
+export async function get2faStatus(): Promise<{ is_2fa_enabled: boolean }> {
+  return apiRequest("/api/v1/auth/2fa/status");
+}
+
+export async function setup2fa(): Promise<{ secret: string; qr_uri: string; manual_code: string }> {
+  return apiRequest("/api/v1/auth/2fa/setup", { method: "POST" });
+}
+
+export async function enable2fa(code: string): Promise<{ detail: string }> {
+  return apiRequest("/api/v1/auth/2fa/enable", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+}
+
+export async function disable2fa(code: string): Promise<{ detail: string }> {
+  return apiRequest("/api/v1/auth/2fa/disable", {
+    method: "POST",
+    body: JSON.stringify({ code }),
+  });
+}
+
+export async function verify2faLogin(tempToken: string, code: string): Promise<{
+  access_token: string;
+  refresh_token: string;
+  user: { id: number; name: string; email: string; role_id: number; school_id: number | null };
+}> {
+  return apiRequest("/api/v1/auth/verify-2fa-login", {
+    method: "POST",
+    body: JSON.stringify({ temp_token: tempToken, code }),
   });
 }
