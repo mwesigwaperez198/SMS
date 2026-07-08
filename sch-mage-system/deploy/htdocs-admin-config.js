@@ -1,0 +1,20 @@
+window.NovaAdminConfig = {
+  appName: "NovaAdmin",
+  portalSubtitle: "Administration portal",
+  apiBaseUrl: "https://novaadmin.kesug.com",
+  defaultIdentifier: "admin@novaadmin.kesug.com",
+  loginPlaceholder: "Admin email or phone",
+  allowedRoles: [
+    "super_admin",
+    "school_admin",
+    "principal",
+    "teacher",
+    "dos",
+    "accountant",
+    "librarian",
+    "transport_manager",
+    "receptionist",
+  ],
+  forbiddenRoleMessage: "Students and parents should use https://novastudent.kesug.com.",
+  storageKey: "novaadmin.session",
+};

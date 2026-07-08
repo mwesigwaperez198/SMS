@@ -177,6 +177,7 @@ export async function resetPassword(currentPassword: string, newPassword: string
 
 function mapStudent(s: any): StudentRecord {
   return {
+    id: s.id ?? 0,
     admissionNo: s.admission_number ?? "",
     name: s.name,
     gender: s.gender ?? "Male",
@@ -475,6 +476,37 @@ export async function verify2faLogin(tempToken: string, code: string): Promise<{
     method: "POST",
     body: JSON.stringify({ temp_token: tempToken, code }),
   });
+}
+
+// ===================== Attendance & Assessment =====================
+
+export async function attendanceMark(payload: { attendance_date: string; records: { student_id: number; status: string; remarks?: string }[] }): Promise<any> {
+  return apiRequest("/api/v1/attendance/mark", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function submitAssessment(payload: { student_id: number; academic_year: string; term: string; subject: string; assessment_type: string; score: number; remarks?: string }): Promise<any> {
+  return apiRequest("/api/v1/assessments/submit", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function submitBulkAssessments(records: any[]): Promise<any> {
+  return apiRequest("/api/v1/assessments/bulk", {
+    method: "POST",
+    body: JSON.stringify({ records }),
+  });
+}
+
+export async function fetchClassAssessments(class_name: string, academic_year?: string, term?: string): Promise<any[]> {
+  const params = new URLSearchParams();
+  if (academic_year) params.set("academic_year", academic_year);
+  if (term) params.set("term", term);
+  const qs = params.toString();
+  return apiRequest(`/api/v1/assessments/class/${encodeURIComponent(class_name)}${qs ? `?${qs}` : ""}`);
 }
 
 // ===================== Platform Admin =====================

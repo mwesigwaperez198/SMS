@@ -1,0 +1,884 @@
+openapi: 3.0.0
+info:
+  title: NovaAdmin School Management API
+  description: Multi-tenant API for web + mobile apps. Handles students, teachers, fees, attendance, exams, library.
+  version: 1.0.0
+  contact:
+    name: Novara Team
+    email: api@novaadmin.com
+servers:
+  - url: https://api.kesug.infinityfreeapp.com/api/v1
+    description: Production
+  - url: http://localhost:8000/api/v1
+    description: Development
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from /auth/login
+
+  schemas:
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        role:
+          type: string
+          enum: [admin, teacher, student, parent]
+        school_id:
+          type: integer
+        school_name:
+          type: string
+        class_id:
+          type: integer
+        class_name:
+          type: string
+        profile_pic:
+          type: string
+          format: uri
+
+    Attendance:
+      type: object
+      properties:
+        id:
+          type: integer
+        date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [present, absent, late]
+        subject:
+          type: string
+
+    Homework:
+      type: object
+      properties:
+        id:
+          type: integer
+        subject:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        due_date:
+          type: string
+          format: date
+        file_url:
+          type: string
+          format: uri
+
+    Fee:
+      type: object
+      properties:
+        id:
+          type: integer
+        description:
+          type: string
+        amount:
+          type: number
+          format: float
+        due_date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [pending, paid, overdue]
+        paid_date:
+          type: string
+          format: date
+
+    Payment:
+      type: object
+      properties:
+        id:
+          type: integer
+        invoice_id:
+          type: integer
+        amount:
+          type: number
+        method:
+          type: string
+          enum: [credit_card, debit_card, upi, net_banking]
+        status:
+          type: string
+          enum: [pending, success, failed]
+        transaction_id:
+          type: string
+
+    Result:
+      type: object
+      properties:
+        id:
+          type: integer
+        subject:
+          type: string
+        marks:
+          type: number
+        total_marks:
+          type: number
+        grade:
+          type: string
+        term:
+          type: string
+
+    LibraryLoan:
+      type: object
+      properties:
+        id:
+          type: integer
+        book_title:
+          type: string
+        book_id:
+          type: string
+        issue_date:
+          type: string
+          format: date
+        due_date:
+          type: string
+          format: date
+        returned_date:
+          type: string
+          format: date
+        fine:
+          type: number
+
+    Message:
+      type: object
+      properties:
+        id:
+          type: integer
+        from_user:
+          type: string
+        from_role:
+          type: string
+        subject:
+          type: string
+        body:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        is_read:
+          type: boolean
+
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        date:
+          type: string
+          format: date
+        description:
+          type: string
+
+    Leave:
+      type: object
+      properties:
+        id:
+          type: integer
+        from_date:
+          type: string
+          format: date
+        to_date:
+          type: string
+          format: date
+        reason:
+          type: string
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+
+    Timetable:
+      type: object
+      properties:
+        day:
+          type: string
+        period:
+          type: integer
+        subject:
+          type: string
+        teacher:
+          type: string
+        room:
+          type: string
+          nullable: true
+
+    Circular:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        content:
+          type: string
+        issued_date:
+          type: string
+          format: date
+        file_url:
+          type: string
+          format: uri
+          nullable: true
+
+    Remark:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+          enum: [academic, behavior, attendance]
+        remark:
+          type: string
+        teacher:
+          type: string
+        date:
+          type: string
+          format: date
+
+    Transport:
+      type: object
+      properties:
+        route_id:
+          type: integer
+        bus_number:
+          type: string
+        driver_name:
+          type: string
+        driver_phone:
+          type: string
+        pickup_location:
+          type: string
+        pickup_time:
+          type: string
+          format: time
+        dropoff_location:
+          type: string
+        dropoff_time:
+          type: string
+          format: time
+        current_location:
+          type: string
+          nullable: true
+        latitude:
+          type: number
+        longitude:
+          type: number
+
+    GalleryImage:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        image_url:
+          type: string
+          format: uri
+        event_date:
+          type: string
+          format: date
+
+paths:
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Login with phone/email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                phone_or_email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Invalid credentials
+
+  /student/me:
+    get:
+      tags: [Student Profile]
+      summary: Get current student profile
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Student profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /attendance:
+    get:
+      tags: [Attendance]
+      summary: Get student attendance for a month
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: month
+          in: query
+          description: Month in YYYY-MM format
+          schema:
+            type: string
+            example: "2025-09"
+      responses:
+        '200':
+          description: List of attendance records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Attendance'
+
+  /attendance/summary:
+    get:
+      tags: [Attendance]
+      summary: Get attendance summary (present/absent count)
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Attendance summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_days:
+                    type: integer
+                  present:
+                    type: integer
+                  absent:
+                    type: integer
+                  percentage:
+                    type: number
+                    format: float
+
+  /homework:
+    get:
+      tags: [Homework]
+      summary: Get homework for student's class
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: List of homework
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Homework'
+
+  /circulars:
+    get:
+      tags: [Circulars]
+      summary: Get school circulars/announcements
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of circulars
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Circular'
+
+  /remarks:
+    get:
+      tags: [Communication]
+      summary: Get teacher remarks for student
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of remarks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Remark'
+
+  /calendar:
+    get:
+      tags: [Events]
+      summary: Get school event calendar
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: month
+          in: query
+          schema:
+            type: string
+            example: "2025-09"
+      responses:
+        '200':
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+
+  /fees/invoices:
+    get:
+      tags: [Fees]
+      summary: Get fee invoices for student
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of invoices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Fee'
+
+  /fees/dashboard:
+    get:
+      tags: [Fees]
+      summary: Get fee payment summary
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Fee summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total_due:
+                    type: number
+                  total_paid:
+                    type: number
+                  total_overdue:
+                    type: number
+
+  /payments/initiate:
+    post:
+      tags: [Payments]
+      summary: Initiate online payment
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                invoice_id:
+                  type: integer
+                amount:
+                  type: number
+                method:
+                  type: string
+                  enum: [credit_card, debit_card, upi, net_banking]
+      responses:
+        '200':
+          description: Payment initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  payment_id:
+                    type: integer
+                  payment_url:
+                    type: string
+                  status:
+                    type: string
+
+  /payments/verify:
+    post:
+      tags: [Payments]
+      summary: Verify payment completion
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                payment_id:
+                  type: integer
+                transaction_id:
+                  type: string
+      responses:
+        '200':
+          description: Payment verified
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+
+  /library/loans:
+    get:
+      tags: [Library]
+      summary: Get student's library loans
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of loans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LibraryLoan'
+
+  /library/search:
+    get:
+      tags: [Library]
+      summary: Search library books
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          description: Search query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of books
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    title:
+                      type: string
+                    author:
+                      type: string
+                    isbn:
+                      type: string
+                    available:
+                      type: boolean
+
+  /results:
+    get:
+      tags: [Exam]
+      summary: Get exam results for student
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: term
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Result'
+
+  /messages/inbox:
+    get:
+      tags: [Communication]
+      summary: Get inbox messages
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+
+  /messages/send:
+    post:
+      tags: [Communication]
+      summary: Send message to teacher/admin
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                to_user_id:
+                  type: integer
+                subject:
+                  type: string
+                body:
+                  type: string
+      responses:
+        '201':
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+
+  /timetable:
+    get:
+      tags: [Academics]
+      summary: Get class timetable
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Timetable
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Timetable'
+
+  /leave/apply:
+    post:
+      tags: [Leave]
+      summary: Apply for leave
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                from_date:
+                  type: string
+                  format: date
+                to_date:
+                  type: string
+                  format: date
+                reason:
+                  type: string
+      responses:
+        '201':
+          description: Leave applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Leave'
+
+  /leave/status:
+    get:
+      tags: [Leave]
+      summary: Get leave application status
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Leave applications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Leave'
+
+  /downloads:
+    get:
+      tags: [Documents]
+      summary: Get downloadable documents
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: type
+          in: query
+          description: Type of document
+          schema:
+            type: string
+            enum: [syllabus, notes, past_papers]
+      responses:
+        '200':
+          description: List of files
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    filename:
+                      type: string
+                    file_url:
+                      type: string
+                      format: uri
+                    uploaded_date:
+                      type: string
+                      format: date
+
+  /announcements:
+    get:
+      tags: [Announcements]
+      summary: Get school announcements
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: List of announcements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Circular'
+
+  /gallery:
+    get:
+      tags: [Media]
+      summary: Get school photo gallery
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Gallery images
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GalleryImage'
+
+  /transport/route:
+    get:
+      tags: [Transport]
+      summary: Get student transport route
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Transport details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transport'
+
+  /transport/live-tracking:
+    get:
+      tags: [Transport]
+      summary: Get live bus location
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Bus location
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bus_id:
+                    type: integer
+                  latitude:
+                    type: number
+                  longitude:
+                    type: number
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /health:
+    get:
+      tags: [System]
+      summary: API health check
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ok"
+                  version:
+                    type: string
+                    example: "1.0.0"

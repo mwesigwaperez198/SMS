@@ -1,0 +1,59 @@
+{
+  "name": "novaadmin-client",
+  "version": "1.0.0",
+  "description": "NovaAdmin web, mobile, and desktop client",
+  "author": "Kesug",
+  "private": true,
+  "type": "module",
+  "main": "electron/main.cjs",
+  "homepage": "./",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "tsc && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "patch:android-build": "node scripts/patch-capacitor-android.cjs",
+    "cap:sync": "npm run build && cap sync && npm run patch:android-build",
+    "android:open": "npm run cap:sync && cap open android",
+    "ios:open": "npm run cap:sync && cap open ios",
+    "desktop:dev": "concurrently \"npm run dev\" \"wait-on http://127.0.0.1:5173 && electron . --dev-server=http://127.0.0.1:5173\"",
+    "desktop:build": "npm run build && electron-builder"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.3.4",
+    "lucide-react": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/ios": "^8.3.4",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "@vitejs/plugin-react": "4.3.3",
+    "concurrently": "^9.2.1",
+    "electron": "^42.3.0",
+    "electron-builder": "^26.8.1",
+    "typescript": "latest",
+    "vite": "5.4.11",
+    "wait-on": "^9.0.10"
+  },
+  "build": {
+    "appId": "com.kesug.novaadmin.desktop",
+    "productName": "NovaAdmin Desktop",
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    }
+  }
+}

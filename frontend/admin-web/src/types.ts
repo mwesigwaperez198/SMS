@@ -42,6 +42,7 @@ export interface StatusItem {
 }
 
 export interface StudentRecord {
+  id: number;
   admissionNo: string;
   name: string;
   gender: "Male" | "Female";

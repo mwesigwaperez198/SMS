@@ -1,0 +1,64 @@
+Development cost and team role breakdown for each phase of your School Management System roadmap 
+— ideal for budgeting or pitching to investors.
+
+---
+
+Phase 1: Core MVP (Month 1–2)
+Team Roles
+| Role | Key Tasks | Estimated Cost (USD) |
+|------|------------|----------------------|
+| Backend Developer | Build APIs, database, fee tracking | 1,500 – 2,000 |
+| Frontend Developer | Mobile/web UI for all roles | 1,200 – 1,800 |
+| UI/UX Designer | Create clean, intuitive layouts | 800 – 1,000 |
+| QA Engineer | Test login, data flow, receipts | 600 – 800 |
+| Project Manager | Coordinate sprint & delivery | 700 – 900 |
+**Total:** ≈ $4,800 – $6,500  
+
+---
+
+Phase 2: Engagement & Retention (Month 3–4
+| Role | Key Tasks | Estimated Cost (USD) |
+|------|------------|----------------------|
+| Mobile Developer | Push notifications, messaging | 1,200 – 1,600 |
+| Backend Developer | Notification logic, parent reports | 1,000 – 1,400 |
+| Designer | Branded report cards | 600 – 800 |
+| QA Engineer | Test alerts & messaging | 500 – 700 |
+**Total:** ≈ $3,300 – $4,500  
+
+---
+
+Phase 3: Advanced Features (Month 5–6)
+| Role | Key Tasks | Estimated Cost (USD) |
+|------|------------|----------------------|
+| Data Analyst | Performance prediction models | 1,000 – 1,400 |
+| Backend Developer | Admissions, QR IDs | 1,200 – 1,600 |
+| Frontend Developer | Dashboards & analytics | 1,000 – 1,400 |
+| QA Engineer | Test new modules | 600 – 800 |
+**Total:** ≈ $3,800 – $5,200  
+
+---
+
+Phase 4: Offline Access (Month 7–8)
+| Role | Key Tasks | Estimated Cost (USD) |
+|------|------------|----------------------|
+| Mobile Developer | Offline sync, caching | 1,200 – 1,600 |
+| Backend Developer | Sync logic, multi‑school support | 1,000 – 1,400 |
+| QA Engineer | Test low‑bandwidth mode | 600 – 800 |
+**Total:** ≈ $2,800 – $3,800  
+
+---
+
+Phase 5: Monetization & Growth (Month 9+)
+| Role | Key Tasks | Estimated Cost (USD) |
+|------|------------|----------------------|
+| Business Analyst | Pricing models, subscription tiers | 800 – 1,000 |
+| Backend Developer | Payment gateway, API integrations | 1,200 – 1,600 |
+| Frontend Developer | Subscription UI | 800 – 1,200 |
+| QA Engineer | Test billing & analytics | 600 – 800 |
+**Total:** ≈ $3,400 – $4,600  
+
+---
+
+Grand Total (Approximate)
+$18,000 – $24,000 for a full‑featured, scalable system.
+

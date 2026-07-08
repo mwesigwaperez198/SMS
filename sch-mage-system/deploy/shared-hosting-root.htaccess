@@ -1,0 +1,36 @@
+DirectoryIndex index.html index.php
+Options -Indexes
+
+SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+
+<FilesMatch "^\.env">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  RewriteRule ^api/v1/(.*)$ api/index.php [QSA,L]
+
+  RewriteCond %{HTTP_HOST} ^(www\.)?novastudent\.kesug\.com$ [NC]
+  RewriteCond %{REQUEST_URI} !^/api/ [NC]
+  RewriteCond %{REQUEST_URI} !^/novastudent/ [NC]
+  RewriteRule ^(.*)$ novastudent/$1 [L]
+
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>

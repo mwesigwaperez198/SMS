@@ -1,0 +1,15 @@
+[Unit]
+Description=NovaAdmin FastAPI service
+After=network.target mariadb.service
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/novaadmin
+EnvironmentFile=/var/www/novaadmin/.env
+ExecStart=/var/www/novaadmin/.venv/bin/gunicorn main:app --config deploy/gunicorn_conf.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

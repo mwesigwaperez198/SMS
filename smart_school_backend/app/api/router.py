@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     admin,
+    assessments,
     attendance,
     auth,
     fees,
@@ -19,6 +20,7 @@ from app.api.routes import (
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
+api_router.include_router(assessments.router)
 api_router.include_router(registration.router)
 api_router.include_router(platform.router)
 api_router.include_router(users.router)

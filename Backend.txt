@@ -1,0 +1,55 @@
+---
+
+## 🛠 Backend Setup (FastAPI or Laravel)
+
+### **1. Authentication & Roles**
+- **JWT-based authentication** (secure token per session).  
+- **Role-based access control (RBAC):**
+  - Parent → view attendance, fees, report cards.  
+  - Student → view timetable, grades.  
+  - Teacher → submit attendance, grades, syllabus progress.  
+  - Admin → full dashboard, financial reports, analytics.  
+
+---
+
+### **2. Database Schema (PostgreSQL)**
+**Core Tables:**
+- `users` → id, name, email, role, password_hash, school_id  
+- `roles` → id, role_name (parent/student/teacher/admin)  
+- `students` → id, name, class, parent_id, school_id  
+- `fees` → id, student_id, amount, receipt_no, payment_method, status, timestamp  
+- `attendance` → id, student_id, date, status, teacher_id  
+- `report_cards` → id, student_id, term, subject, grade, teacher_id  
+- `notifications` → id, user_id, type, message, status, timestamp  
+
+---
+
+### **3. API Endpoints**
+- **Auth:** `/api/auth/register`, `/api/auth/login`, `/api/auth/logout`  
+- **Fees:** `/api/fees/payment`, `/api/fees/student/{id}`, `/api/fees/report`  
+- **Attendance:** `/api/attendance/mark`, `/api/attendance/student/{id}`, `/api/attendance/class/{id}`  
+- **Report Cards:** `/api/report-cards/submit`, `/api/report-cards/student/{id}`, `/api/report-cards/download/{id}`  
+- **Admin Dashboard:** `/api/admin/overview`, `/api/admin/teachers`, `/api/admin/analytics`  
+- **Notifications:** `/api/notifications/send`, `/api/notifications/user/{id}`  
+- **Offline Sync:** `/api/sync/upload`, `/api/sync/download`  
+
+---
+
+### **4. Deployment & Infrastructure**
+- **Containerization:** Docker for backend services.  
+- **Hosting:** AWS Elastic Beanstalk or DigitalOcean Droplets.  
+- **Database:** Managed PostgreSQL (AWS RDS or DigitalOcean Managed DB).  
+- **Storage:** AWS S3 for receipts & report cards.  
+- **Monitoring:** CloudWatch or Sentry for error tracking.  
+
+---
+
+### **5. Security**
+- TLS/mTLS for all API calls.  
+- Audit logs for fee transactions.  
+- Encrypted storage for sensitive data.  
+- Role enforcement at endpoint level.  
+
+---
+
+✅ With this setup, you can scaffold your backend quickly and keep it modular for future feature expansion.  

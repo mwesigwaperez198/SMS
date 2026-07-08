@@ -1,0 +1,65 @@
+
+---
+
+## 🔗 API Endpoint Structure (MVP)
+
+### **Authentication & Roles**
+- `POST /api/auth/register` → Register new user (role: parent, student, teacher, admin)  
+- `POST /api/auth/login` → Login, returns JWT token  
+- `GET /api/auth/profile` → Fetch user profile & role  
+- `POST /api/auth/logout` → Logout  
+
+---
+
+### **Fees Management**
+- `POST /api/fees/payment` → Record payment (amount, method, receipt)  
+- `GET /api/fees/student/{id}` → Get student fee balance & history  
+- `GET /api/fees/report` → Admin view of all fees collected  
+- `POST /api/fees/receipt/{id}` → Generate digital receipt  
+
+---
+
+### **Attendance Tracking**
+- `POST /api/attendance/mark` → Teacher marks student attendance  
+- `GET /api/attendance/student/{id}` → Parent view of student attendance history  
+- `GET /api/attendance/class/{id}` → Admin/teacher view of class attendance  
+- **Notification Trigger:** Parent receives alert when student is absent  
+
+---
+
+### **Report Cards**
+- `POST /api/report-cards/submit` → Teacher submits grades for student  
+- `GET /api/report-cards/student/{id}` → Parent/student view of report card  
+- `GET /api/report-cards/class/{id}` → Admin view of class performance  
+- `GET /api/report-cards/download/{id}` → Generate branded digital report card (PDF)  
+
+---
+
+### **Admin Dashboard**
+- `GET /api/admin/overview` → Summary of fees, attendance, performance  
+- `GET /api/admin/teachers` → Teacher accountability (attendance, submissions)  
+- `GET /api/admin/analytics` → Performance trends & financial reports  
+
+---
+
+### **Notifications**
+- `POST /api/notifications/send` → Send role‑specific push notification  
+- `GET /api/notifications/user/{id}` → Fetch user’s notification history  
+
+---
+
+### **Offline Sync**
+- `POST /api/sync/upload` → Upload cached data when online  
+- `GET /api/sync/download` → Download updates for offline use  
+
+---
+
+## 📌 Notes for Implementation
+- **Authentication:** JWT tokens with role claims (parent/student/teacher/admin).  
+- **Error Handling:** Standardized JSON responses (`status`, `message`, `data`).  
+- **Security:** TLS, audit logs for fee transactions, RBAC enforced at endpoint level.  
+- **Scalability:** Multi‑tenant design (school_id included in all records).  
+
+---
+
+✅ With this endpoint map, your backend team can scaffold controllers and services immediately.  

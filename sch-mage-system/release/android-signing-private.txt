@@ -1,0 +1,6 @@
+NovaAdmin Android release signing key
+Keystore: C:\Users\Mwesigwa Perez\Desktop\New folder (2)\Python Project\SCHOOLS\sch-mage-system\release\novaadmin-upload-key.jks
+Alias: novaadmin
+Store password: eY76amPlFrOEp1wVAyverEEVmIfP0IN8
+Key password: eY76amPlFrOEp1wVAyverEEVmIfP0IN8
+Keep this file and the .jks private. You need the same key for future app updates.

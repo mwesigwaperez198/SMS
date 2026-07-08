@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Users, BookOpen, MessageSquare, Save, CheckCircle } from "lucide-react";
 import type { ConnectedData } from "../api";
+import { attendanceMark, submitAssessment } from "../api";
 
 interface TeacherWorkspaceProps {
   view: string;
@@ -20,20 +21,82 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
   const [msgSent, setMsgSent] = useState("");
 
   const classData = data.teacherClasses.find(c => c.id === selectedClass);
-  const assessmentRecords = data.assessmentData[selectedClass] ?? [];
-  const attendanceRecords = data.attendanceData[selectedClass] ?? [];
+  const classStudents = data.students.filter(s =>
+    s.className === classData?.name && s.stream === classData?.stream
+  );
+  const attendanceRecords = classStudents.map(s => ({
+    studentId: String(s.id),
+    studentName: s.name,
+    admissionNo: s.admissionNo,
+  }));
+  const assessmentRecords = classStudents.map(s => ({
+    studentId: String(s.id),
+    studentName: s.name,
+    admissionNo: s.admissionNo,
+    bot: null as number | null,
+    mot: null as number | null,
+    eot: null as number | null,
+    remarks: "",
+  }));
 
   const setAtt = (studentId: string, status: AttStatus) =>
     setAttendance(p => ({ ...p, [studentId]: p[studentId] === status ? "" : status }));
 
-  const handleSaveAttendance = () => {
-    setAttSaved(true);
-    setTimeout(() => setAttSaved(false), 2500);
+  const handleSaveAttendance = async () => {
+    const records = Object.entries(attendance)
+      .filter(([, status]) => status !== "")
+      .map(([studentId, status]) => ({
+        student_id: parseInt(studentId, 10),
+        status,
+      }));
+    if (records.length === 0) return;
+    try {
+      await attendanceMark({
+        attendance_date: new Date().toISOString().split("T")[0],
+        records,
+      });
+      setAttSaved(true);
+      setTimeout(() => setAttSaved(false), 2500);
+    } catch {
+      setAttSaved(false);
+    }
   };
 
-  const handleSaveMark = (studentId: string) => {
+  const handleSaveMark = async (studentId: string) => {
+    const a = assessments[studentId] ?? {};
+    const student = classStudents.find(s => String(s.id) === studentId);
+    if (!student) return;
+    const subject = classData?.subject ?? "";
+    const academicYear = data.school.academic_year;
+    const term = data.school.term;
+
     setSaveStatus(p => ({ ...p, [studentId]: "saving" }));
-    setTimeout(() => setSaveStatus(p => ({ ...p, [studentId]: "saved" })), 800);
+    try {
+      const types = ["BOT", "MOT", "EOT"] as const;
+      const scores: Record<string, string> = {
+        BOT: a.bot,
+        MOT: a.mot,
+        EOT: a.eot,
+      };
+      for (const t of types) {
+        const val = scores[t];
+        if (val !== undefined && val !== "") {
+          await submitAssessment({
+            student_id: student.id,
+            academic_year: academicYear,
+            term,
+            subject,
+            assessment_type: t,
+            score: parseFloat(val),
+            remarks: a.remarks || undefined,
+          });
+        }
+      }
+      setSaveStatus(p => ({ ...p, [studentId]: "saved" }));
+      setTimeout(() => setSaveStatus(p => ({ ...p, [studentId]: "" })), 2000);
+    } catch {
+      setSaveStatus(p => ({ ...p, [studentId]: "" }));
+    }
   };
 
   const handleSendMsg = () => {
@@ -97,7 +160,6 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
                 </div>
               </div>
             )) : (
-              /* fallback: show class cards when no per-student data */
               data.teacherClasses.map(cls => (
                 <div key={cls.id} className="attendance-row">
                   <div>
@@ -180,9 +242,12 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
                       </td>
                       <td>
                         <button className="tool-button" style={{ minHeight: 30 }} onClick={() => handleSaveMark(r.studentId)}>
-                          {saveStatus[r.studentId] === "saved"
-                            ? <CheckCircle size={14} style={{ color: "#10b981" }} />
-                            : <Save size={14} />}
+                          {saveStatus[r.studentId] === "saving" ? (
+                            <span style={{ fontSize: "0.75rem" }}>Saving…</span>
+                          ) : saveStatus[r.studentId] === "saved" ? (
+                            <CheckCircle size={14} style={{ color: "#10b981" }} />
+                          ) : (
+                            <Save size={14} />)}
                         </button>
                       </td>
                     </tr>
@@ -268,7 +333,6 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
     );
   }
 
-  // Default
   return (
     <div className="content-grid">
       <div className="metric-grid">

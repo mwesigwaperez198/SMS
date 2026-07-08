@@ -1,4 +1,5 @@
 from app.db.base import Base
+from app.models.assessment import Assessment
 from app.models.attendance import Attendance
 from app.models.audit import AuditLog
 from app.models.fees import FeeCategory, Invoice, Payment, Receipt
@@ -14,6 +15,7 @@ from app.models.sync import SyncChange
 from app.models.user import User
 
 __all__ = [
+    "Assessment",
     "Attendance",
     "AuditLog",
     "Base",
