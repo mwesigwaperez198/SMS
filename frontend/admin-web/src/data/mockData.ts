@@ -83,7 +83,7 @@ export const roles: RoleProfile[] = [
     title: "Finance Office",
     accent: "#b45309",
     icon: Banknote,
-    nav: ["Fee Accounts", "Payments", "Receipts", "Vouchers", "Cashbook", "Reports"]
+    nav: ["Home", "Payments", "Receipts", "Cashbook", "Quotations", "Requisitions", "Reports", "Settings"]
   },
   {
     key: "librarian",

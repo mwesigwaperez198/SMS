@@ -6,6 +6,7 @@ from app.api.routes import (
     attendance,
     auth,
     fees,
+    finance,
     library,
     notifications,
     platform,
@@ -26,6 +27,7 @@ api_router.include_router(platform.router)
 api_router.include_router(users.router)
 api_router.include_router(students.router)
 api_router.include_router(fees.router)
+api_router.include_router(finance.router)
 api_router.include_router(attendance.router)
 api_router.include_router(report_cards.router)
 api_router.include_router(notifications.router)

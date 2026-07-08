@@ -213,7 +213,7 @@ const ROLE_NAV: Record<RoleKey, string[]> = {
   "super-admin": ["Dashboard", "Schools", "Registrations", "Keys", "Plans", "Audit Log", "Users", "System Alerts", "Support"],
   admin: ["Home", "Approvals", "Students", "Staff", "Finance", "Communication", "Reports", "Settings", "Notifications"],
   secretary: ["Register Student", "Student Profiles", "Import Students", "Guardians", "Documents"],
-  bursar: ["Fee Accounts", "Payments", "Receipts", "Vouchers", "Cashbook", "Reports"],
+  bursar: ["Home", "Payments", "Receipts", "Cashbook", "Quotations", "Requisitions", "Reports", "Settings"],
   librarian: ["Catalog", "Issue & Return", "Book Requests", "Upload to Students", "Reports"],
   teacher: ["My Classes", "Attendance", "Assessments", "Report Remarks", "Messages"],
   parent: ["Home", "Fees", "Receipts", "Attendance", "Report Card", "Messages"],
