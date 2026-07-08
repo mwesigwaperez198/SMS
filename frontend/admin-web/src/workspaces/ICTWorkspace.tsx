@@ -25,9 +25,9 @@ const SYSTEM_HEALTH = [
 ];
 
 const RECENT_ALERTS = [
-  { severity: "High" as const, message: "Mbarara Science Academy — storage above 85%", time: "10 min ago" },
-  { severity: "Medium" as const, message: "SSL certificate for kampalahigh.sc.ug expires soon", time: "1 hr ago" },
-  { severity: "Low" as const, message: "Jinja College — backup completed", time: "3 hrs ago" },
+  { severity: "critical" as const, message: "Mbarara Science Academy — storage above 85%", time: "10 min ago" },
+  { severity: "warning" as const, message: "SSL certificate for kampalahigh.sc.ug expires soon", time: "1 hr ago" },
+  { severity: "info" as const, message: "Jinja College — backup completed", time: "3 hrs ago" },
 ];
 
 export function ICTWorkspace({ view, data, onViewChange }: ICTWorkspaceProps) {
@@ -112,12 +112,12 @@ export function ICTWorkspace({ view, data, onViewChange }: ICTWorkspaceProps) {
           <div className="stack-list">
             {(data.systemAlerts.length > 0 ? data.systemAlerts : RECENT_ALERTS).map((a, i) => (
               <div key={i} className="list-row">
-                <div className="dot" style={{background: a.severity === "High" ? "#ef4444" : a.severity === "Medium" ? "#f59e0b" : "#10b981"}} />
+                <div className="dot" style={{background: a.severity === "critical" ? "#ef4444" : a.severity === "warning" ? "#f59e0b" : "#10b981"}} />
                 <div>
                   <span style={{fontSize:"0.88rem"}}>{a.message}</span>
                   <br /><span style={{fontSize:"0.78rem",color:"var(--muted)"}}>{(a as any).time || "Just now"}</span>
                 </div>
-                <span className={`badge ${a.severity === "High" ? "error" : a.severity === "Medium" ? "warning" : "info"}`}>{a.severity}</span>
+                <span className={`badge ${a.severity === "critical" ? "error" : a.severity === "warning" ? "warning" : "info"}`}>{a.severity}</span>
               </div>
             ))}
             {data.systemAlerts.length === 0 && RECENT_ALERTS.length === 0 && <p className="empty-state">No alerts</p>}
@@ -206,12 +206,12 @@ export function ICTWorkspace({ view, data, onViewChange }: ICTWorkspaceProps) {
           ) : (
             (data.notifications.length > 0 ? data.notifications : RECENT_ALERTS.map((a, i) => ({ id: String(i), title: a.message, message: a.message, type: "system", severity: a.severity, status: "Unread" }))).map((n, i) => (
               <div key={i} className="list-row">
-                <div className="dot" style={{background: n.severity === "High" ? "#ef4444" : n.severity === "Medium" ? "#f59e0b" : "#10b981"}} />
+                <div className="dot" style={{background: n.severity === "critical" ? "#ef4444" : n.severity === "warning" ? "#f59e0b" : "#10b981"}} />
                 <div>
                   <strong style={{fontSize:"0.9rem"}}>{(n as any).title}</strong>
                   <br /><span style={{fontSize:"0.78rem",color:"var(--muted)"}}>{(n as any).message} · {(n as any).type}</span>
                 </div>
-                <span className={`badge ${n.severity === "High" ? "error" : n.severity === "Medium" ? "warning" : "info"}`}>{n.severity}</span>
+                <span className={`badge ${n.severity === "critical" ? "error" : n.severity === "warning" ? "warning" : "info"}`}>{n.severity}</span>
               </div>
             ))
           )}

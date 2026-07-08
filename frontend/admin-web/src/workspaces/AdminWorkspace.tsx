@@ -84,12 +84,12 @@ export function AdminWorkspace({ view, data, onViewChange }: AdminWorkspaceProps
           <div className="panel-title"><strong style={{fontSize:"0.9rem", color: accent}}>Recent Notifications</strong><span className="badge muted">{data.notifications.length}</span></div>
           {data.notifications.slice(0, 6).map(n => (
             <div key={n.id} className="list-row">
-              <div className="dot" style={{background: n.severity==="High" ? "#ef4444" : "#f59e0b"}} />
+              <div className="dot" style={{background: n.severity==="critical" ? "#ef4444" : "#f59e0b"}} />
               <div>
                 <strong style={{fontSize:"0.9rem"}}>{n.title}</strong>
                 <br/><span style={{fontSize:"0.78rem",color:"var(--muted)"}}>{n.message}</span>
               </div>
-              <span className={`badge ${n.severity==="High" ? "error" : "warning"}`}>{n.severity}</span>
+              <span className={`badge ${n.severity==="critical" ? "error" : "warning"}`}>{n.severity}</span>
             </div>
           ))}
         </div>
@@ -402,12 +402,12 @@ export function AdminWorkspace({ view, data, onViewChange }: AdminWorkspaceProps
           <div className="panel-title"><strong style={{fontSize:"0.9rem", color: accent}}>All Notifications</strong><span className="badge muted">{data.notifications.length} total</span></div>
           {data.notifications.map(n => (
             <div key={n.id} className="list-row">
-              <div className="dot" style={{background: n.severity==="High" ? "#ef4444" : "#f59e0b"}}/>
+              <div className="dot" style={{background: n.severity==="critical" ? "#ef4444" : "#f59e0b"}}/>
               <div>
                 <strong style={{fontSize:"0.9rem"}}>{n.title}</strong>
                 <br/><span style={{fontSize:"0.78rem",color:"var(--muted)"}}>{n.message} · {n.type}</span>
               </div>
-              <span className={`badge ${n.severity==="High" ? "error" : "warning"}`}>{n.severity}</span>
+              <span className={`badge ${n.severity==="critical" ? "error" : "warning"}`}>{n.severity}</span>
             </div>
           ))}
         </div>

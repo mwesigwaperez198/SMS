@@ -181,12 +181,12 @@ export const roleMetrics: Record<RoleKey, Metric[]> = {
 };
 
 export const students: StudentRecord[] = [
-  { admissionNo: "NDS-2026-0001", name: "Ariho Grace", gender: "Female", className: "P5", stream: "Blue", guardian: "Mugisha Sarah", status: "Active" },
-  { admissionNo: "NDS-2026-0002", name: "Kato Brian", gender: "Male", className: "P4", stream: "Green", guardian: "Kato James", status: "Active" },
-  { admissionNo: "NDS-2026-0003", name: "Namara Hope", gender: "Female", className: "P7", stream: "Blue", guardian: "Atuheire Joan", status: "Active" },
-  { admissionNo: "NDS-2026-0004", name: "Okello Daniel", gender: "Male", className: "S1", stream: "East", guardian: "Okello Peter", status: "Pending" },
-  { admissionNo: "NDS-2026-0005", name: "Tendo Alice", gender: "Female", className: "P5", stream: "Blue", guardian: "Tendo Robert", status: "Active" },
-  { admissionNo: "NDS-2026-0006", name: "Mugabi John", gender: "Male", className: "P5", stream: "Blue", guardian: "Mugabi Ruth", status: "Active" }
+  { id: 1, admissionNo: "NDS-2026-0001", name: "Ariho Grace", gender: "Female", className: "P5", stream: "Blue", guardian: "Mugisha Sarah", status: "Active" },
+  { id: 2, admissionNo: "NDS-2026-0002", name: "Kato Brian", gender: "Male", className: "P4", stream: "Green", guardian: "Kato James", status: "Active" },
+  { id: 3, admissionNo: "NDS-2026-0003", name: "Namara Hope", gender: "Female", className: "P7", stream: "Blue", guardian: "Atuheire Joan", status: "Active" },
+  { id: 4, admissionNo: "NDS-2026-0004", name: "Okello Daniel", gender: "Male", className: "S1", stream: "East", guardian: "Okello Peter", status: "Pending" },
+  { id: 5, admissionNo: "NDS-2026-0005", name: "Tendo Alice", gender: "Female", className: "P5", stream: "Blue", guardian: "Tendo Robert", status: "Active" },
+  { id: 6, admissionNo: "NDS-2026-0006", name: "Mugabi John", gender: "Male", className: "P5", stream: "Blue", guardian: "Mugabi Ruth", status: "Active" }
 ];
 
 export const fullStudents: FullStudentRecord[] = [

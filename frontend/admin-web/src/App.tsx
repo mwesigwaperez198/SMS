@@ -342,7 +342,7 @@ function AdminHome({ data, onViewChange }: { data: ConnectedData; onViewChange: 
 
       <div className="notification-strip">
         {data.notifications.slice(0, 3).map((notification) => (
-          <button className={`notification-card ${notification.severity === "High" ? "high" : ""}`} key={notification.id} onClick={() => onViewChange("Notifications")}>
+                     <button className={`notification-card ${notification.severity === "critical" ? "high" : ""}`} key={notification.id} onClick={() => onViewChange("Notifications")}>
             <strong>{notification.title}</strong>
             <span>{notification.message}</span>
           </button>
@@ -462,9 +462,9 @@ function NotificationsView({ data, roleKey }: { data: ConnectedData; roleKey: st
   const filtered = filter === "all" ? roleFiltered : roleFiltered.filter(n => n.severity.toLowerCase() === filter);
   const severityCounts = {
     all: roleFiltered.length,
-    high: roleFiltered.filter(n => n.severity === "High").length,
-    warning: roleFiltered.filter(n => n.severity === "Warning" || n.severity === "Medium").length,
-    info: roleFiltered.filter(n => n.severity === "Info" || n.severity === "Low").length,
+    high: roleFiltered.filter(n => n.severity === "critical").length,
+    warning: roleFiltered.filter(n => n.severity === "warning").length,
+    info: roleFiltered.filter(n => n.severity === "info").length,
   };
   const roleLabel = roleKey.charAt(0).toUpperCase() + roleKey.slice(1).replace("-", " ");
   const roleOptions = ["all", "approval", "payment", "attendance", "system", roleKey];
@@ -495,12 +495,12 @@ function NotificationsView({ data, roleKey }: { data: ConnectedData; roleKey: st
           <div style={{display:"grid",gap:8,padding:"8px 0"}}>
             {filtered.map(n => (
               <div key={n.id} className="list-row">
-                <div className="dot" style={{background: n.severity === "High" ? "#ef4444" : n.severity === "Medium" || n.severity === "Warning" ? "#f59e0b" : "#10b981"}} />
+                <div className="dot" style={{background: n.severity === "critical" ? "#ef4444" : n.severity === "warning" ? "#f59e0b" : "#10b981"}} />
                 <div>
                   <strong style={{fontSize:"0.9rem"}}>{n.title}</strong>
                   <br /><span style={{fontSize:"0.78rem",color:"var(--muted)"}}>{n.message} · {n.type}</span>
                 </div>
-                <span className={`badge ${n.severity === "High" ? "error" : n.severity === "Medium" || n.severity === "Warning" ? "warning" : "info"}`}>{n.severity}</span>
+                <span className={`badge ${n.severity === "critical" ? "error" : n.severity === "warning" ? "warning" : "info"}`}>{n.severity}</span>
               </div>
             ))}
           </div>
