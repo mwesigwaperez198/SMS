@@ -23,6 +23,8 @@ class Settings(BaseSettings):
     default_currency_code: str = "UGX"
     default_timezone: str = "Africa/Kampala"
     two_factor_issuer: str = "NOVARA School"
+    resend_api_key: str | None = None
+    owner_notification_email: str = "novaratechafrica@gmail.com"
 
     backend_cors_origins: list[str] = Field(default_factory=list)
 

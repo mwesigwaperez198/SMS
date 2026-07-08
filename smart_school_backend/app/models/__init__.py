@@ -4,6 +4,7 @@ from app.models.audit import AuditLog
 from app.models.fees import FeeCategory, Invoice, Payment, Receipt
 from app.models.library import LibraryBook, LibraryBorrow, LibraryRequest
 from app.models.notification import Notification
+from app.models.registration import RegistrationKey, RegistrationRequest
 from app.models.report_card import ReportCard
 from app.models.role import Role
 from app.models.school import School
@@ -25,6 +26,8 @@ __all__ = [
     "Payment",
     "ProductKey",
     "Receipt",
+    "RegistrationKey",
+    "RegistrationRequest",
     "ReportCard",
     "Role",
     "School",
