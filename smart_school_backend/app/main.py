@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
         connect_args = {}
         if settings.database_url.startswith("sqlite"):
             connect_args["check_same_thread"] = False
-        engine = create_engine(settings.database_url, pool_pre_ping=True, connect_args=connect_args)
+        engine = create_engine(settings.database_url_with_ssl, pool_pre_ping=True, connect_args=connect_args)
         Base.metadata.create_all(bind=engine)
         db = sessionmaker(bind=engine, autoflush=False, autocommit=False)()
         try:

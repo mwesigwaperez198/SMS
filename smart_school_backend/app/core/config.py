@@ -58,6 +58,15 @@ class Settings(BaseSettings):
     def backend_cors_origins(self) -> list[str]:
         return _parse_cors_origins(self.backend_cors_origins_raw)
 
+    @property
+    def database_url_with_ssl(self) -> str:
+        url = self.database_url
+        if "localhost" not in url and "sqlite" not in url:
+            if "sslmode" not in url:
+                separator = "&" if "?" in url else "?"
+                url = f"{url}{separator}sslmode=require"
+        return url
+
 
 @lru_cache
 def get_settings() -> Settings:
