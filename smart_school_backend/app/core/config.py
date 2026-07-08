@@ -1,8 +1,22 @@
 from functools import lru_cache
 from os import environ
 
-from pydantic import Field, field_validator
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+def _parse_cors_origins(raw: str) -> list[str]:
+    v = raw.strip()
+    if not v:
+        return []
+    try:
+        import json
+        parsed = json.loads(v)
+        if isinstance(parsed, list):
+            return [str(item) for item in parsed]
+    except Exception:
+        pass
+    return [item.strip() for item in v.split(",") if item.strip()]
 
 
 class Settings(BaseSettings):
@@ -26,7 +40,9 @@ class Settings(BaseSettings):
     resend_api_key: str | None = None
     owner_notification_email: str = "novaratechafrica@gmail.com"
 
-    backend_cors_origins: list[str] = Field(default_factory=list)
+    # Stored as plain str to avoid pydantic-settings' complex-type JSON decoding
+    # (which would crash on malformed env var values before our parser runs)
+    backend_cors_origins_raw: str = Field(default="", alias="backend_cors_origins")
 
     initial_super_admin_email: str | None = None
     initial_super_admin_password: str | None = None
@@ -38,26 +54,9 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    @field_validator("backend_cors_origins", mode="before")
-    @classmethod
-    def parse_cors_origins(cls, v: object) -> list[str]:
-        if v is None:
-            return []
-        if isinstance(v, list):
-            return [str(item) for item in v]
-        if isinstance(v, str):
-            v = v.strip()
-            if not v:
-                return []
-            try:
-                import json
-                parsed = json.loads(v)
-                if isinstance(parsed, list):
-                    return [str(item) for item in parsed]
-            except (json.JSONDecodeError, TypeError):
-                pass
-            return [item.strip() for item in v.split(",") if item.strip()]
-        return []
+    @property
+    def backend_cors_origins(self) -> list[str]:
+        return _parse_cors_origins(self.backend_cors_origins_raw)
 
 
 @lru_cache
