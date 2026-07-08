@@ -91,8 +91,25 @@ def create_app() -> FastAPI:
     app.include_router(api_router, prefix=settings.api_v1_prefix)
 
     @app.get("/api/health", tags=["health"])
-    def health_check() -> dict[str, str]:
-        return {"status": "ok", "environment": settings.environment}
+    def health_check() -> dict:
+        db_status = "not_checked"
+        db_hint = ""
+        try:
+            from sqlalchemy import create_engine, text
+            engine = create_engine(settings.database_url_with_ssl, pool_pre_ping=True)
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            db_status = "ok"
+        except Exception as e:
+            msg = str(e)
+            db_status = "error"
+            db_hint = msg[:300]
+        return {
+            "status": "ok",
+            "environment": settings.environment,
+            "db": db_status,
+            "db_hint": db_hint,
+        }
 
     return app
 
