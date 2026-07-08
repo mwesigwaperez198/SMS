@@ -24,6 +24,9 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
   const [returnMsg, setReturnMsg] = useState("");
   const [distributeMsg, setDistributeMsg] = useState("");
   const [addForm, setAddForm] = useState({ title:"", author:"", subject:"", shelf:"", isbn:"", copies:"1" });
+  const [requestForm, setRequestForm] = useState({ title:"", author:"", subject:"", reason:"" });
+  const [requestMsg, setRequestMsg] = useState("");
+  const [overdueLoans, setOverdueLoans] = useState<{ code:string; title:string; student:string; dueDate:string; daysOverdue:number }[]>([]);
 
   const books = data.libraryBooks;
   const filtered = books.filter(b =>
@@ -136,54 +139,99 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
     );
   }
 
+  const overdueCount = overdueLoans.length;
+
+  const mockOverdue = () => {
+    setOverdueLoans([
+      { code:"BK-ENG-0045", title:"English Grammar", student:"Akankunda Joan", dueDate:"2026-06-20", daysOverdue:18 },
+      { code:"BK-MAT-0112", title:"Mathematics Today", student:"Mugisha Ivan", dueDate:"2026-06-25", daysOverdue:13 },
+      { code:"BK-SCI-0028", title:"Basic Science", student:"Nakimuli Grace", dueDate:"2026-07-01", daysOverdue:7 },
+    ]);
+  };
+
   if (view === "Issue & Return") {
     return (
-      <div className="office-layout">
-        {/* Issue */}
-        <div className="detail-panel">
-          <div className="panel-title">
-            <div className="panel-title-left"><p className="eyebrow">Circulation</p><strong>Issue Book</strong></div>
-            <BookOpen size={18} />
+      <div style={{display:"grid",gap:14}}>
+        {overdueCount > 0 && (
+          <div className="notice-strip" style={{background:"#fee2e2",color:"#b91c1c",display:"flex",alignItems:"center",gap:8}}>
+            <AlertCircle size={16} />{overdueCount} overdue {overdueCount === 1 ? "book" : "books"} — notify borrowers
           </div>
-          <div className="office-form">
-            <label>Student ID / Name<input placeholder="Search student…" value={issueStudent} onChange={e => setIssueStudent(e.target.value)} /></label>
-            <label>Book Code<input placeholder="Scan or type code" value={issueCode} onChange={e => setIssueCode(e.target.value)} /></label>
-            <label>Due Date<input type="date" value={issueDue} onChange={e => setIssueDue(e.target.value)} /></label>
-            {issueMsg && <p className={`notice-strip ${issueMsg.startsWith("✓") ? "success" : "error"}`}>{issueMsg}</p>}
-            <button className="tool-button primary" onClick={handleIssue}><BookOpen size={15} />Issue Book</button>
+        )}
+        <div className="office-layout">
+          {/* Issue */}
+          <div className="detail-panel">
+            <div className="panel-title">
+              <div className="panel-title-left"><p className="eyebrow">Circulation</p><strong>Issue Book</strong></div>
+              <BookOpen size={18} />
+            </div>
+            <div className="office-form">
+              <label>Student ID / Name<input placeholder="Search student…" value={issueStudent} onChange={e => setIssueStudent(e.target.value)} /></label>
+              <label>Book Code<input placeholder="Scan or type code" value={issueCode} onChange={e => setIssueCode(e.target.value)} /></label>
+              <label>Due Date<input type="date" value={issueDue} onChange={e => setIssueDue(e.target.value)} /></label>
+              {issueMsg && <p className={`notice-strip ${issueMsg.startsWith("✓") ? "success" : "error"}`}>{issueMsg}</p>}
+              <button className="tool-button primary" onClick={handleIssue}><BookOpen size={15} />Issue Book</button>
+            </div>
+          </div>
+
+          {/* Return */}
+          <div className="detail-panel">
+            <div className="panel-title">
+              <div className="panel-title-left"><p className="eyebrow">Circulation</p><strong>Return Book</strong></div>
+              <RotateCcw size={18} />
+            </div>
+            <div className="office-form">
+              <label>Book Code<input placeholder="Scan or type code" value={returnCode} onChange={e => setReturnCode(e.target.value)} /></label>
+              <label>Condition
+                <select value={returnCondition} onChange={e => setReturnCondition(e.target.value)}>
+                  <option>Good</option><option>Damaged</option><option>Lost</option>
+                </select>
+              </label>
+              {returnMsg && <p className={`notice-strip ${returnMsg.startsWith("✓") ? "success" : "error"}`}>{returnMsg}</p>}
+              <button className="tool-button primary" onClick={handleReturn}><RotateCcw size={15} />Process Return</button>
+            </div>
+
+            {/* Active loans mini-list */}
+            <div className="panel-title" style={{marginTop:8}}>
+              <strong style={{fontSize:"0.9rem"}}>Active Loans</strong>
+            </div>
+            <div className="stack-list">
+              {books.filter(b => (b.borrowed ?? 0) > 0).slice(0,5).map(b => (
+                <div key={b.code} className="list-row">
+                  <div className="dot" />
+                  <div><strong style={{fontSize:"0.88rem"}}>{b.title}</strong><br/><span style={{fontSize:"0.78rem",color:"var(--muted)"}}>{b.code}</span></div>
+                  <span className="badge warning">{b.borrowed} out</span>
+                </div>
+              ))}
+              {books.filter(b => (b.borrowed ?? 0) > 0).length === 0 && <p className="empty-state">No active loans</p>}
+            </div>
           </div>
         </div>
 
-        {/* Return */}
-        <div className="detail-panel">
+        {/* Overdue table */}
+        <div className="list-panel">
           <div className="panel-title">
-            <div className="panel-title-left"><p className="eyebrow">Circulation</p><strong>Return Book</strong></div>
-            <RotateCcw size={18} />
+            <strong style={{fontSize:"0.9rem"}}>Overdue Books</strong>
+            <button className="tool-button" onClick={mockOverdue} style={{minHeight:28,fontSize:"0.8rem"}}>Refresh</button>
           </div>
-          <div className="office-form">
-            <label>Book Code<input placeholder="Scan or type code" value={returnCode} onChange={e => setReturnCode(e.target.value)} /></label>
-            <label>Condition
-              <select value={returnCondition} onChange={e => setReturnCondition(e.target.value)}>
-                <option>Good</option><option>Damaged</option><option>Lost</option>
-              </select>
-            </label>
-            {returnMsg && <p className={`notice-strip ${returnMsg.startsWith("✓") ? "success" : "error"}`}>{returnMsg}</p>}
-            <button className="tool-button primary" onClick={handleReturn}><RotateCcw size={15} />Process Return</button>
-          </div>
-
-          {/* Active loans mini-list */}
-          <div className="panel-title" style={{marginTop:8}}>
-            <strong style={{fontSize:"0.9rem"}}>Active Loans</strong>
-          </div>
-          <div className="stack-list">
-            {books.filter(b => (b.borrowed ?? 0) > 0).slice(0,5).map(b => (
-              <div key={b.code} className="list-row">
-                <div className="dot" />
-                <div><strong style={{fontSize:"0.88rem"}}>{b.title}</strong><br/><span style={{fontSize:"0.78rem",color:"var(--muted)"}}>{b.code}</span></div>
-                <span className="badge warning">{b.borrowed} out</span>
-              </div>
-            ))}
-            {books.filter(b => (b.borrowed ?? 0) > 0).length === 0 && <p className="empty-state">No active loans</p>}
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Code</th><th>Title</th><th>Borrower</th><th>Due Date</th><th>Overdue</th><th>Action</th></tr>
+              </thead>
+              <tbody>
+                {overdueLoans.map((o, i) => (
+                  <tr key={i}>
+                    <td><code>{o.code}</code></td>
+                    <td>{o.title}</td>
+                    <td>{o.student}</td>
+                    <td>{o.dueDate}</td>
+                    <td><span className="badge error">{o.daysOverdue} days</span></td>
+                    <td><button className="tool-button" style={{minHeight:26,fontSize:"0.78rem"}}>Notify</button></td>
+                  </tr>
+                ))}
+                {overdueLoans.length === 0 && <tr><td colSpan={6} className="empty-state">No overdue books</td></tr>}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -217,6 +265,25 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
             </div>
           ))}
           {data.requestedBooks.length === 0 && <p className="empty-state">No requests</p>}
+        </div>
+
+        <div className="detail-panel">
+          <div className="panel-title">
+            <div className="panel-title-left"><p className="eyebrow">New</p><strong>Add Book Request</strong></div>
+            <Plus size={18} />
+          </div>
+          <div className="office-form">
+            <label>Book Title<input placeholder="Enter book title" value={requestForm.title} onChange={e => setRequestForm(p => ({...p, title: e.target.value}))} /></label>
+            <label>Author<input placeholder="Author name" value={requestForm.author} onChange={e => setRequestForm(p => ({...p, author: e.target.value}))} /></label>
+            <label>Subject<input placeholder="e.g. Mathematics" value={requestForm.subject} onChange={e => setRequestForm(p => ({...p, subject: e.target.value}))} /></label>
+            <label>Reason<textarea placeholder="Why is this book needed?" rows={3} value={requestForm.reason} onChange={e => setRequestForm(p => ({...p, reason: e.target.value}))} /></label>
+            {requestMsg && <p className={`notice-strip ${requestMsg.startsWith("✓") ? "success" : "error"}`}>{requestMsg}</p>}
+            <button className="tool-button primary" onClick={() => {
+              if (!requestForm.title || !requestForm.author) { setRequestMsg("Fill title and author"); return; }
+              setRequestMsg("✓ Request submitted for approval");
+              setRequestForm({ title:"", author:"", subject:"", reason:"" });
+            }}><Plus size={15} />Submit Request</button>
+          </div>
         </div>
       </div>
     );
@@ -296,13 +363,21 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
   // Default dashboard
   return (
     <div className="content-grid">
+      {overdueCount > 0 && (
+        <div className="notice-strip" style={{background:"#fee2e2",color:"#b91c1c",display:"flex",alignItems:"center",gap:8}}>
+          <AlertCircle size={16} />{overdueCount} overdue {overdueCount === 1 ? "book" : "books"} — check Issue &amp; Return
+        </div>
+      )}
       <div className="metric-grid">
         <div className="metric teal"><div className="metric-icon"><LibraryBig size={22}/></div><div className="metric-body"><strong>{books.length}</strong><span>Total Books</span></div></div>
         <div className="metric green"><div className="metric-icon"><Package size={22}/></div><div className="metric-body"><strong>{totalAvailable}</strong><span>Available</span></div></div>
         <div className="metric amber"><div className="metric-icon"><BookOpen size={22}/></div><div className="metric-body"><strong>{totalBorrowed}</strong><span>Borrowed</span></div></div>
         <div className="metric red"><div className="metric-icon"><AlertCircle size={22}/></div><div className="metric-body"><strong>{pendingRequests.length}</strong><span>Requests</span></div></div>
       </div>
-      <div className="notice-strip">Select a view from the sidebar — Catalog, Issue &amp; Return, Book Requests, Upload to Students, or Reports.</div>
+      <div className="notice-strip" style={{display:"flex",gap:8,alignItems:"center",justifyContent:"space-between"}}>
+        <span>Select a view from the sidebar — Catalog, Issue &amp; Return, Book Requests, Upload to Students, or Reports.</span>
+        <button className="tool-button" onClick={mockOverdue} style={{minHeight:28,fontSize:"0.8rem"}}><AlertCircle size={13} />Check Overdue</button>
+      </div>
     </div>
   );
 }
