@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Users, BookOpen, MessageSquare, Save, CheckCircle } from "lucide-react";
+import { Users, BookOpen, MessageSquare, Save, CheckCircle, Star } from "lucide-react";
 import type { ConnectedData } from "../api";
 import { attendanceMark, submitAssessment } from "../api";
 
@@ -19,6 +19,9 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
   const [saveStatus, setSaveStatus] = useState<Record<string, string>>({});
   const [msgText, setMsgText] = useState("");
   const [msgSent, setMsgSent] = useState("");
+  const [classReps, setClassReps] = useState<Record<string, string>>({});
+  const [repSelectClass, setRepSelectClass] = useState("");
+  const [repSelectStudent, setRepSelectStudent] = useState("");
 
   const classData = data.teacherClasses.find(c => c.id === selectedClass);
   const classStudents = data.students.filter(s =>
@@ -309,25 +312,66 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
   }
 
   if (view === "My Classes") {
+    const clsStudents = data.students.filter(s => s.className === repSelectClass?.split("|")[0] && s.stream === repSelectClass?.split("|")[1]);
     return (
       <div className="content-grid">
         <div className="metric-grid">
           <div className="metric teal"><div className="metric-icon"><BookOpen size={22} /></div><div className="metric-body"><strong>{data.teacherClasses.length}</strong><span>Classes</span></div></div>
           <div className="metric green"><div className="metric-icon"><Users size={22} /></div><div className="metric-body"><strong>{data.teacherClasses.reduce((s, c) => s + (c.totalStudents ?? 0), 0)}</strong><span>Total Students</span></div></div>
-          <div className="metric blue"><div className="metric-icon"><Save size={22} /></div><div className="metric-body"><strong>{assessmentRecords.length}</strong><span>Assessments</span></div></div>
+          <div className="metric blue"><div className="metric-icon"><Star size={22} /></div><div className="metric-body"><strong>{Object.keys(classReps).length}</strong><span>Class Reps</span></div></div>
           <div className="metric amber"><div className="metric-icon"><MessageSquare size={22} /></div><div className="metric-body"><strong>{data.parentMessages.length}</strong><span>Messages</span></div></div>
         </div>
-        <div className="stack-list list-panel">
-          {data.teacherClasses.map(cls => (
-            <div key={cls.id} className="list-row">
-              <div className="dot" />
-              <div>
-                <strong style={{ fontSize: "0.9rem" }}>{cls.name} {cls.stream}</strong>
-                <br /><span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>{cls.subject} · {cls.totalStudents} students</span>
+
+        <div className="office-layout">
+          <div className="stack-list list-panel">
+            {data.teacherClasses.map(cls => {
+              const repId = classReps[cls.id];
+              const repStudent = data.students.find(s => String(s.id) === repId);
+              return (
+                <div key={cls.id} className="list-row">
+                  <div className="dot" style={{background: repId ? "#f59e0b" : "var(--muted)"}} />
+                  <div>
+                    <strong style={{ fontSize: "0.9rem" }}>{cls.name} {cls.stream}</strong>
+                    <br /><span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>{cls.subject} · {cls.totalStudents} students</span>
+                    {repStudent && <><br /><span style={{fontSize:"0.78rem",color:"#f59e0b"}}>Rep: {repStudent.name}</span></>}
+                  </div>
+                  <button className="tool-button" style={{minHeight:28}} onClick={() => {
+                    setRepSelectClass(`${cls.name}|${cls.stream}|${cls.id}`);
+                    setRepSelectStudent(classReps[cls.id] ?? "");
+                  }}>
+                    <Star size={13} />{repId ? "Change Rep" : "Set Rep"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {repSelectClass && (
+            <div className="detail-panel">
+              <div className="panel-title">
+                <div className="panel-title-left"><p className="eyebrow">Class Rep</p><strong>{repSelectClass.split("|")[0]} {repSelectClass.split("|")[1]}</strong></div>
+                <Star size={18} />
               </div>
-              <span className="badge info">{cls.subject}</span>
+              <div className="office-form">
+                <label>Select Student
+                  <select value={repSelectStudent} onChange={e => setRepSelectStudent(e.target.value)}>
+                    <option value="">— choose class rep —</option>
+                    {clsStudents.map(s => (
+                      <option key={s.id} value={String(s.id)}>{s.name} ({s.admissionNo})</option>
+                    ))}
+                  </select>
+                </label>
+                <button className="tool-button primary" onClick={() => {
+                  const clsId = repSelectClass.split("|")[2];
+                  setClassReps(p => ({ ...p, [clsId]: repSelectStudent }));
+                  setRepSelectClass("");
+                  setRepSelectStudent("");
+                }} disabled={!repSelectStudent}>
+                  <Star size={15} />Set as Class Representative
+                </button>
+              </div>
             </div>
-          ))}
+          )}
         </div>
       </div>
     );

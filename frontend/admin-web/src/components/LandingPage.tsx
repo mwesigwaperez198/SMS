@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { NovaraLogo } from "./NovaraLogo";
 
 interface LandingPageProps {
   onEnterApp: () => void;
@@ -94,7 +95,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
       <nav className={`landing-nav${scrolled ? " scrolled" : ""}`}>
         <div className="landing-nav-inner">
           <div className="landing-brand">
-            <span className="landing-logo">N</span>
+            <NovaraLogo size={28} />
             <strong>Novara</strong>
           </div>
           <div className="landing-nav-actions">
@@ -165,13 +166,12 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
 
       <section className="landing-roles">
         <div className="landing-section-header">
-          <h2>One platform, eight powerful roles</h2>
+          <h2>One platform, seven powerful roles</h2>
           <p>Every stakeholder gets exactly the access they need — nothing more, nothing less.</p>
         </div>
         <div className="landing-role-grid">
           {[
-            { role: "Super Admin", desc: "Global platform control & tenant provisioning" },
-            { role: "Headmaster", desc: "Full school oversight & financial dashboards" },
+            { role: "Headteacher", desc: "Full school oversight & financial dashboards" },
             { role: "Teacher", desc: "Attendance, marks, lesson plans & communications" },
             { role: "Bursar", desc: "Fees, invoices, Mobile Money & financial reports" },
             { role: "Librarian", desc: "Book catalog, NCDC filtering & borrow tracking" },
@@ -200,7 +200,7 @@ export function LandingPage({ onEnterApp }: LandingPageProps) {
       <footer className="landing-footer">
         <div className="landing-footer-inner">
           <div className="landing-footer-brand">
-            <span className="landing-logo landing-logo-sm">N</span>
+            <NovaraLogo size={24} />
             <div>
               <strong>Novara</strong>
               <p>Smart School Management for East Africa</p>

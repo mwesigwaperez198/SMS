@@ -3,6 +3,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import type { RoleKey, RoleProfile } from "../types";
 import type { Session } from "../api";
 import { schoolProfile } from "../data/mockData";
+import { NovaraLogo } from "./NovaraLogo";
 
 interface AppShellProps {
   roles: RoleProfile[];
@@ -61,8 +62,8 @@ export function AppShell({
   return (
     <div className="app-shell-modern" data-role={activeRole.key}>
       <aside className="sidebar-modern">
-        <div className="sidebar-brand">
-          <div className="brand-icon">{schoolProfile.shortName}</div>
+          <div className="sidebar-brand">
+          <div className="brand-icon"><NovaraLogo size={24} /></div>
           <div className="brand-text">
             <strong>{schoolProfile.name}</strong>
             <span>{schoolProfile.term} · {schoolProfile.academicYear}</span>

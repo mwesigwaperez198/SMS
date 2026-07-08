@@ -182,11 +182,10 @@ export const roleMetrics: Record<RoleKey, Metric[]> = {
 
 export const students: StudentRecord[] = [
   { id: 1, admissionNo: "NDS-2026-0001", name: "Ariho Grace", gender: "Female", className: "P5", stream: "Blue", guardian: "Mugisha Sarah", status: "Active" },
-  { id: 2, admissionNo: "NDS-2026-0002", name: "Kato Brian", gender: "Male", className: "P4", stream: "Green", guardian: "Kato James", status: "Active" },
-  { id: 3, admissionNo: "NDS-2026-0003", name: "Namara Hope", gender: "Female", className: "P7", stream: "Blue", guardian: "Atuheire Joan", status: "Active" },
-  { id: 4, admissionNo: "NDS-2026-0004", name: "Okello Daniel", gender: "Male", className: "S1", stream: "East", guardian: "Okello Peter", status: "Pending" },
-  { id: 5, admissionNo: "NDS-2026-0005", name: "Tendo Alice", gender: "Female", className: "P5", stream: "Blue", guardian: "Tendo Robert", status: "Active" },
-  { id: 6, admissionNo: "NDS-2026-0006", name: "Mugabi John", gender: "Male", className: "P5", stream: "Blue", guardian: "Mugabi Ruth", status: "Active" }
+  { id: 2, admissionNo: "NDS-2026-0002", name: "Namara Hope", gender: "Female", className: "P7", stream: "Blue", guardian: "Mugisha Sarah", status: "Active" },
+  { id: 3, admissionNo: "NDS-2026-0003", name: "Tendo Alice", gender: "Female", className: "P5", stream: "Blue", guardian: "Tendo Robert", status: "Active" },
+  { id: 4, admissionNo: "NDS-2026-0004", name: "Mugabi John", gender: "Male", className: "P4", stream: "Green", guardian: "Tendo Robert", status: "Active" },
+  { id: 5, admissionNo: "NDS-2026-0005", name: "Okello Daniel", gender: "Male", className: "S1", stream: "East", guardian: "Okello Peter", status: "Pending" },
 ];
 
 export const fullStudents: FullStudentRecord[] = [
@@ -298,19 +297,20 @@ export const teacherClasses: TeacherClass[] = [
 export const assessmentData: Record<string, StudentAssessment[]> = {
   "CLS-001": [
     { studentId: "NDS-2026-0001", studentName: "Ariho Grace", admissionNo: "NDS-2026-0001", bot: 72, mot: 68, eot: null, average: null, grade: "—", remarks: "" },
-    { studentId: "NDS-2026-0005", studentName: "Tendo Alice", admissionNo: "NDS-2026-0005", bot: 85, mot: 80, eot: null, average: null, grade: "—", remarks: "" },
-    { studentId: "NDS-2026-0006", studentName: "Mugabi John", admissionNo: "NDS-2026-0006", bot: 55, mot: 60, eot: null, average: null, grade: "—", remarks: "" }
+    { studentId: "NDS-2026-0003", studentName: "Tendo Alice", admissionNo: "NDS-2026-0003", bot: 85, mot: 80, eot: null, average: null, grade: "—", remarks: "" },
+  ],
+  "CLS-003": [
+    { studentId: "NDS-2026-0005", studentName: "Okello Daniel", admissionNo: "NDS-2026-0005", bot: 55, mot: 60, eot: null, average: null, grade: "—", remarks: "" }
   ]
 };
 
 export const attendanceData: Record<string, AttendanceRecord[]> = {
   "CLS-001": [
     { studentId: "NDS-2026-0001", studentName: "Ariho Grace", admissionNo: "NDS-2026-0001", status: "Present", time: "7:55 AM" },
-    { studentId: "NDS-2026-0005", studentName: "Tendo Alice", admissionNo: "NDS-2026-0005", status: "Late", time: "8:47 AM" },
-    { studentId: "NDS-2026-0006", studentName: "Mugabi John", admissionNo: "NDS-2026-0006", status: "Absent" }
+    { studentId: "NDS-2026-0003", studentName: "Tendo Alice", admissionNo: "NDS-2026-0003", status: "Late", time: "8:47 AM" },
   ],
-  "CLS-002": [
-    { studentId: "NDS-2026-0003", studentName: "Namara Hope", admissionNo: "NDS-2026-0003", status: "Present", time: "7:50 AM" }
+  "CLS-003": [
+    { studentId: "NDS-2026-0005", studentName: "Okello Daniel", admissionNo: "NDS-2026-0005", status: "Present", time: "7:50 AM" }
   ]
 };
 
