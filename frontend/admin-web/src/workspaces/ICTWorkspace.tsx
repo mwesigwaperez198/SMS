@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Activity, Database, HardDrive, Users, Wifi, Shield, RefreshCw, Server, Monitor, CheckCircle, AlertTriangle, XCircle, Smartphone, Bell, UserCheck, UserX, School, Search } from "lucide-react";
 import type { ConnectedData } from "../api";
+import type { AdminNotification } from "../types";
 
 interface ICTWorkspaceProps {
   view: string;
@@ -188,12 +189,12 @@ export function ICTWorkspace({ view, data, onViewChange }: ICTWorkspaceProps) {
           {data.notifications.length === 0 && RECENT_ALERTS.length === 0 ? (
             <p className="empty-state">No notifications</p>
           ) : (
-            (data.notifications.length > 0 ? data.notifications : RECENT_ALERTS.map((a, i) => ({ id: String(i), title: a.message, message: a.message, type: "system", severity: a.severity, status: "Unread" }))).map((n, i) => (
+            (data.notifications.length > 0 ? data.notifications : RECENT_ALERTS.map((a, i) => ({ id: String(i), title: a.message, message: a.message, type: "system" as const, severity: a.severity, status: "Unread" as const })) as AdminNotification[]).map((n, i) => (
               <div key={i} className="list-row">
                 <div className="dot" style={{background: n.severity === "critical" ? "#ef4444" : n.severity === "warning" ? "#f59e0b" : "#10b981"}} />
                 <div>
-                  <strong style={{fontSize:"0.9rem"}}>{(n as any).title}</strong>
-                  <br /><span style={{fontSize:"0.78rem",color:"var(--muted)"}}>{(n as any).message} · {(n as any).type}</span>
+                  <strong style={{fontSize:"0.9rem"}}>{n.title}</strong>
+                  <br /><span style={{fontSize:"0.78rem",color:"var(--muted)"}}>{n.message} · {n.type}</span>
                 </div>
                 <span className={`badge ${n.severity === "critical" ? "error" : n.severity === "warning" ? "warning" : "info"}`}>{n.severity}</span>
               </div>

@@ -30,7 +30,7 @@ import type {
 } from "./types";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "https://sms-msku.onrender.com";
-const REQUEST_TIMEOUT = 10_000;
+const REQUEST_TIMEOUT = 30_000;
 
 // In-memory token refresh lock to prevent multiple simultaneous refreshes
 let refreshPromise: Promise<string> | null = null;

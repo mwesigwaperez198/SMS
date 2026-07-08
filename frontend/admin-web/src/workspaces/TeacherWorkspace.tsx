@@ -66,7 +66,7 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
   };
 
   const handleSaveMark = async (studentId: string) => {
-    const a = assessments[studentId] ?? {};
+    const a = assessments[studentId] ?? { bot: "", mot: "", eot: "", remarks: "" };
     const student = classStudents.find(s => String(s.id) === studentId);
     if (!student) return;
     const subject = classData?.subject ?? "";
@@ -214,7 +214,7 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
               </thead>
               <tbody>
                 {assessmentRecords.map(r => {
-                  const a = assessments[r.studentId] ?? {};
+                  const a = assessments[r.studentId] ?? { bot: "", mot: "", eot: "", remarks: "" };
                   const average = avg(r);
                   return (
                     <tr key={r.studentId}>

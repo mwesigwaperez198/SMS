@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Lock, Shield, ArrowLeft } from "lucide-react";
 import type { Session, TwoFactorChallenge } from "../api";
+import type { RoleKey } from "../types";
 import { verify2faLogin, mapUserToSession, roleLabels, roleMap } from "../api";
 import { roles } from "../data/mockData";
 
@@ -26,7 +27,7 @@ export function LoginScreen({ loading, error, onLogin, onSession, onForgotPasswo
 
   const effectiveChallenge = externalChallenge ?? null;
 
-  const handleDemoLogin = (roleKey: string) => {
+  const handleDemoLogin = (roleKey: RoleKey) => {
     const role = roles.find(r => r.key === roleKey);
     onSession({
       token: "demo-token",
@@ -35,7 +36,7 @@ export function LoginScreen({ loading, error, onLogin, onSession, onForgotPasswo
         email: role?.email ?? `${roleKey}@demo.local`,
         full_name: role?.label ?? roleKey,
         role: role?.label ?? roleKey,
-        role_key: roleKey as any,
+        role_key: roleKey,
         school: "Nova Demonstration School"
       }
     });
