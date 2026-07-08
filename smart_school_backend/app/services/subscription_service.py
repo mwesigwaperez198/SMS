@@ -56,7 +56,7 @@ def generate_product_key(
         key_hash=key_hash,
         generated_by_id=generated_by_id,
         is_used=False,
-        expires_at=datetime.now(timezone.utc) + timedelta(hours=72),
+        expires_at=datetime.now(timezone.utc) + timedelta(days=plan.duration_days or 30),
     )
     db.add(product_key)
     db.commit()
@@ -101,13 +101,13 @@ def activate_product_key(
         SchoolSubscription.school_id == school_id
     ).order_by(SchoolSubscription.id.desc()).first()
 
-    term_months = 4
+    plan_days = record.plan.duration_days or 30
     starts_at = now
-    expires_at = now + timedelta(days=30 * term_months)
+    expires_at = now + timedelta(days=plan_days)
 
     if existing and existing.status == "active" and existing.expires_at.replace(tzinfo=timezone.utc) > now:
         starts_at = existing.expires_at
-        expires_at = starts_at + timedelta(days=30 * term_months)
+        expires_at = starts_at + timedelta(days=plan_days)
 
     subscription = SchoolSubscription(
         school_id=school_id,

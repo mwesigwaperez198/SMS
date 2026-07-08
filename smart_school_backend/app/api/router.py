@@ -8,6 +8,7 @@ from app.api.routes import (
     library,
     notifications,
     platform,
+    platform_admin,
     registration,
     report_cards,
     students,
@@ -30,3 +31,4 @@ api_router.include_router(admin.router)
 api_router.include_router(sync.router)
 api_router.include_router(library.router)
 api_router.include_router(subscriptions.router)
+api_router.include_router(platform_admin.router)

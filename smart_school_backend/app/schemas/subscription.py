@@ -8,12 +8,24 @@ class SubscriptionPlanRead(BaseModel):
     name: str
     price: float
     currency_code: str
+    duration_days: int
     max_students: int | None
     max_staff: int | None
     features: dict
     is_active: bool
 
     model_config = {"from_attributes": True}
+
+
+class SubscriptionPlanCreate(BaseModel):
+    name: str
+    price: float
+    currency_code: str = "UGX"
+    duration_days: int = 30
+    max_students: int | None = None
+    max_staff: int | None = None
+    features: dict = {}
+    is_active: bool = True
 
 
 class SchoolSubscriptionRead(BaseModel):

@@ -209,7 +209,7 @@ const DEFAULT_HOME: AdminHomeData = {
 };
 
 const ROLE_NAV: Record<RoleKey, string[]> = {
-  "super-admin": ["Dashboard", "Schools", "Audit Log", "System Alerts", "Support"],
+  "super-admin": ["Dashboard", "Schools", "Registrations", "Keys", "Plans", "Audit Log", "Users", "System Alerts", "Support"],
   admin: ["Home", "Approvals", "Students", "Staff", "Finance", "Communication", "Reports", "Settings", "Notifications"],
   secretary: ["Register Student", "Student Profiles", "Import Students", "Guardians", "Documents"],
   bursar: ["Fee Accounts", "Payments", "Receipts", "Vouchers", "Cashbook", "Reports"],
@@ -472,4 +472,172 @@ export async function verify2faLogin(tempToken: string, code: string): Promise<{
     method: "POST",
     body: JSON.stringify({ temp_token: tempToken, code }),
   });
+}
+
+// ===================== Platform Admin =====================
+
+export interface PlatformStats {
+  total_schools: number;
+  active_schools: number;
+  total_students: number;
+  total_users: number;
+  pending_registrations: number;
+  active_subscriptions: number;
+  expired_subscriptions: number;
+  keys_generated_30d: number;
+}
+
+export interface SchoolAdminItem {
+  id: number;
+  name: string;
+  school_code: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  subscription_status: string;
+  user_count: number;
+  student_count: number;
+  created_at: string;
+}
+
+export interface SchoolDetail {
+  id: number;
+  name: string;
+  school_code: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  subscription_status: string;
+  country: string;
+  admin_name: string | null;
+  admin_email: string | null;
+  student_count: number;
+  user_count: number;
+  created_at: string;
+}
+
+export interface RegistrationRequestItem {
+  id: number;
+  school_name: string;
+  admin_name: string;
+  admin_email: string;
+  admin_phone: string;
+  payment_method: string;
+  payment_details: string;
+  status: string;
+  created_at: string;
+}
+
+export interface PlanItem {
+  id: number;
+  name: string;
+  price: number;
+  currency_code: string;
+  duration_days: number;
+  max_students: number | null;
+  max_staff: number | null;
+  features: Record<string, boolean>;
+  is_active: boolean;
+}
+
+export interface KeyItem {
+  id: number;
+  school_name: string | null;
+  plan_name: string | null;
+  is_used: boolean;
+  used_at: string | null;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface AuditLogItem {
+  id: number;
+  action: string;
+  actor_name: string | null;
+  entity: string | null;
+  detail: string | null;
+  ip_address: string | null;
+  created_at: string;
+}
+
+export interface PlatformUserItem {
+  id: number;
+  name: string;
+  email: string;
+  role: string | null;
+  school: string | null;
+  is_active: boolean;
+  is_2fa_enabled: boolean;
+  last_login: string | null;
+  created_at: string;
+}
+
+export async function fetchPlatformStats(): Promise<PlatformStats> {
+  return apiRequest("/api/v1/platform/stats");
+}
+
+export async function fetchPlatformSchools(search?: string, status?: string): Promise<SchoolAdminItem[]> {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (status) params.set("status", status);
+  const qs = params.toString();
+  return apiRequest(`/api/v1/platform/schools${qs ? `?${qs}` : ""}`);
+}
+
+export async function fetchSchoolDetail(schoolId: number): Promise<SchoolDetail> {
+  return apiRequest(`/api/v1/platform/schools/${schoolId}`);
+}
+
+export async function toggleSchoolStatus(schoolId: number, status: string): Promise<{ detail: string }> {
+  return apiRequest(`/api/v1/platform/schools/${schoolId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function fetchRegistrations(status?: string): Promise<RegistrationRequestItem[]> {
+  const qs = status ? `?status=${status}` : "";
+  return apiRequest(`/api/v1/platform/registrations${qs}`);
+}
+
+export async function approveRegistration(requestId: number): Promise<{ product_key: string; expires_at: string; message: string }> {
+  return apiRequest(`/api/v1/platform/registrations/${requestId}/approve`, { method: "POST" });
+}
+
+export async function fetchPlans(): Promise<PlanItem[]> {
+  return apiRequest("/api/v1/platform/plans");
+}
+
+export async function createPlan(payload: {
+  name: string; price: number; currency_code?: string; duration_days?: number;
+  max_students?: number | null; max_staff?: number | null; features?: Record<string, boolean>;
+}): Promise<PlanItem> {
+  return apiRequest("/api/v1/platform/plans", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function fetchKeys(schoolId?: number, used?: boolean): Promise<KeyItem[]> {
+  const params = new URLSearchParams();
+  if (schoolId) params.set("school_id", String(schoolId));
+  if (used !== undefined) params.set("used", String(used));
+  const qs = params.toString();
+  return apiRequest(`/api/v1/platform/keys${qs ? `?${qs}` : ""}`);
+}
+
+export async function generateKey(schoolId: number, planId: number): Promise<{ product_key: string; expires_at: string; message: string }> {
+  return apiRequest("/api/v1/platform/keys/generate", {
+    method: "POST",
+    body: JSON.stringify({ school_id: schoolId, plan_id: planId }),
+  });
+}
+
+export async function fetchPlatformAuditLogs(limit?: number): Promise<AuditLogItem[]> {
+  const qs = limit ? `?limit=${limit}` : "";
+  return apiRequest(`/api/v1/platform/audit-logs${qs}`);
+}
+
+export async function fetchPlatformUsers(): Promise<PlatformUserItem[]> {
+  return apiRequest("/api/v1/platform/users");
 }

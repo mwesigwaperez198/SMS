@@ -23,6 +23,7 @@ class SubscriptionPlan(Base):
     name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True)
     price: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False, default=0)
     currency_code: Mapped[str] = mapped_column(String(3), nullable=False, default="UGX")
+    duration_days: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
     max_students: Mapped[int | None] = mapped_column(Integer)
     max_staff: Mapped[int | None] = mapped_column(Integer)
     features: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
