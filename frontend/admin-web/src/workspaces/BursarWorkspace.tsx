@@ -7,6 +7,7 @@ import {
   Eye, CreditCard
 } from "lucide-react";
 import type { ConnectedData } from "../api";
+import { printElement, exportAsCSV } from "../utils/exportUtils";
 
 interface BursarWorkspaceProps {
   view: string;
@@ -364,11 +365,9 @@ export function BursarWorkspace({ view, data, onShareFinance }: BursarWorkspaceP
               <option value="unmatched">Unmatched</option>
             </select>
             <button className="tool-button" onClick={onShareFinance}><FileText size={15}/>Share to Admin</button>
-            <button className="tool-button" onClick={() => window.print()}><Printer size={15}/>Print</button>
+            <button className="tool-button" onClick={() => printElement("export-payments")}><Printer size={15}/>Print</button>
           </div>
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>Reference</th><th>Student</th><th>Method</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead>
+          <div id="export-payments" className="table-wrap">
               <tbody>
                 {filteredPayments.map(p => (
                   <tr key={p.reference}>
@@ -424,11 +423,9 @@ export function BursarWorkspace({ view, data, onShareFinance }: BursarWorkspaceP
           <div className="office-filters">
             <label><Search size={15}/><input placeholder="Search student or receipt…" value={search} onChange={e => setSearch(e.target.value)} /></label>
             <button className="tool-button primary" onClick={() => setShowReceiptForm(true)}><Plus size={15}/>Issue Receipt</button>
-            <button className="tool-button" onClick={() => window.print()}><Printer size={15}/>Print Register</button>
+            <button className="tool-button" onClick={() => printElement("export-receipts-list")}><Printer size={15}/>Print Register</button>
           </div>
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>Receipt No</th><th>Student</th><th>Amount</th><th>Method</th><th>Date</th><th>Issued By</th></tr></thead>
+          <div id="export-receipts-list" className="table-wrap">
               <tbody>
                 {filteredReceipts.map(r => (
                   <tr key={r.id}>
@@ -512,9 +509,9 @@ export function BursarWorkspace({ view, data, onShareFinance }: BursarWorkspaceP
             </div>
             <label><Search size={15}/><input placeholder="Search…" value={search} onChange={e => setSearch(e.target.value)} /></label>
             <button className="tool-button primary" onClick={() => setShowCashForm(true)}><Plus size={15}/>Add Entry</button>
-            <button className="tool-button" onClick={() => window.print()}><Printer size={15}/>Print</button>
+            <button className="tool-button" onClick={() => printElement("export-cashbook")}><Printer size={15}/>Print</button>
           </div>
-          <div className="table-wrap">
+          <div id="export-cashbook" className="table-wrap">
             <table>
               <thead><tr><th>Date</th><th>Description</th><th>Amount</th><th>Paid By</th><th>Receipt No</th><th>Type</th></tr></thead>
               <tbody>
@@ -591,9 +588,9 @@ export function BursarWorkspace({ view, data, onShareFinance }: BursarWorkspaceP
           <div className="office-filters">
             <label><Search size={15}/><input placeholder="Search customer or number…" value={search} onChange={e => setSearch(e.target.value)} /></label>
             <button className="tool-button primary" onClick={() => setShowQuotationForm(true)}><Plus size={15}/>Create Quotation</button>
-            <button className="tool-button" onClick={() => window.print()}><Printer size={15}/>Print</button>
+            <button className="tool-button" onClick={() => printElement("export-quotations")}><Printer size={15}/>Print</button>
           </div>
-          <div className="table-wrap">
+          <div id="export-quotations" className="table-wrap">
             <table>
               <thead><tr><th>Quotation No</th><th>Customer</th><th>Date</th><th>Total</th><th>Status</th></tr></thead>
               <tbody>
@@ -674,9 +671,9 @@ export function BursarWorkspace({ view, data, onShareFinance }: BursarWorkspaceP
           <div className="office-filters">
             <label><Search size={15}/><input placeholder="Search department or number…" value={search} onChange={e => setSearch(e.target.value)} /></label>
             <button className="tool-button primary" onClick={() => setShowRequisitionForm(true)}><Plus size={15}/>Create Requisition</button>
-            <button className="tool-button" onClick={() => window.print()}><Printer size={15}/>Print</button>
+            <button className="tool-button" onClick={() => printElement("export-requisitions")}><Printer size={15}/>Print</button>
           </div>
-          <div className="table-wrap">
+          <div id="export-requisitions" className="table-wrap">
             <table>
               <thead><tr><th>Req No</th><th>Department</th><th>Requested By</th><th>Date</th><th>Total</th><th>Status</th></tr></thead>
               <tbody>
@@ -704,37 +701,104 @@ export function BursarWorkspace({ view, data, onShareFinance }: BursarWorkspaceP
   }
 
   if (view === "Reports") {
+    const voucherData = allReceipts.map(r => ({ "Receipt No": r.receiptNo, Student: r.student, Amount: formatCurrency(r.amount), Method: r.method, Date: r.date, "Issued By": r.issuedBy }));
+    const cashbookData = cashEntries.map(e => ({ Date: e.date, Description: e.description, Amount: formatCurrency(e.amount), "Paid By": e.paidBy, "Receipt No": e.receiptNo, Type: e.type }));
     return (
       <div className="content-grid">
         <MetricsBar />
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
-          {[
-            ["Payment Vouchers", "Generate and download payment vouchers"],
-            ["Receipt Register", "Complete receipt ledger for the term"],
-            ["Financial Summary", "Collection rates and outstanding balances"],
-          ].map(([title, desc]) => (
-            <div key={title} className="detail-panel" style={{padding:20,display:"grid",gap:10}}>
-              <FileText size={28} style={{color:"var(--primary)"}} />
-              <strong>{title}</strong>
-              <span style={{fontSize:"0.82rem",color:"var(--muted)"}}>{desc}</span>
-              <button className="tool-button" onClick={() => window.print()}><Printer size={14}/>Export PDF</button>
+          <div id="export-vouchers" className="detail-panel" style={{padding:20,display:"grid",gap:10}}>
+            <FileText size={28} style={{color:"var(--primary)"}} />
+            <strong>Payment Vouchers</strong>
+            <span style={{fontSize:"0.82rem",color:"var(--muted)"}}>Generate and download payment vouchers</span>
+            <div style={{display:"grid",gap:8}}>
+              {allReceipts.slice(0, 5).map(r => (
+                <div key={r.id} style={{display:"flex",justifyContent:"space-between",fontSize:"0.82rem",padding:"4px 0",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
+                  <span>{r.receiptNo} - {r.student}</span>
+                  <strong>{formatCurrency(r.amount)}</strong>
+                </div>
+              ))}
+              {allReceipts.length === 0 && <span style={{color:"var(--muted)"}}>No vouchers yet</span>}
             </div>
-          ))}
-          {[
-            ["Cashbook Report", "Income and expense summary"],
-            ["Quotations Report", "All quotations summary"],
-            ["Requisitions Report", "All requisitions summary"],
-          ].map(([title, desc]) => (
-            <div key={title} className="detail-panel" style={{padding:20,display:"grid",gap:10}}>
-              <FileText size={28} style={{color:"var(--primary)"}} />
-              <strong>{title}</strong>
-              <span style={{fontSize:"0.82rem",color:"var(--muted)"}}>{desc}</span>
-              <div style={{display:"flex",gap:8}}>
-                <button className="tool-button" onClick={() => window.print()}><Printer size={14}/>Export PDF</button>
-                <button className="tool-button" onClick={() => setNotice(title + " report generated")}><Download size={14}/>Generate</button>
+            <div style={{display:"flex",gap:8}}>
+              <button className="tool-button" onClick={() => printElement("export-vouchers", "Payment Vouchers")}><Printer size={14}/>Export PDF</button>
+              <button className="tool-button" onClick={() => { exportAsCSV(voucherData, "payment-vouchers.csv"); setNotice("Vouchers CSV exported"); }}><Download size={14}/>CSV</button>
+            </div>
+          </div>
+          <div id="export-receipts" className="detail-panel" style={{padding:20,display:"grid",gap:10}}>
+            <FileText size={28} style={{color:"var(--primary)"}} />
+            <strong>Receipt Register</strong>
+            <span style={{fontSize:"0.82rem",color:"var(--muted)"}}>Complete receipt ledger for the term</span>
+            <div style={{display:"grid",gap:4}}>
+              <div style={{display:"flex",justifyContent:"space-between",fontSize:"0.78rem",color:"var(--muted)",padding:"4px 0"}}>
+                <span>Total Receipts: <strong>{allReceipts.length}</strong></span>
+                <span>Total: <strong>{formatCurrency(allReceipts.reduce((s, r) => s + r.amount, 0))}</strong></span>
               </div>
+              {allReceipts.slice(0, 10).map(r => (
+                <div key={r.id} style={{display:"flex",justifyContent:"space-between",fontSize:"0.82rem",padding:"3px 0",borderBottom:"1px solid rgba(255,255,255,0.06)"}}>
+                  <span>{r.receiptNo} - {r.student}</span>
+                  <strong>{formatCurrency(r.amount)}</strong>
+                </div>
+              ))}
             </div>
-          ))}
+            <div style={{display:"flex",gap:8}}>
+              <button className="tool-button" onClick={() => printElement("export-receipts", "Receipt Register")}><Printer size={14}/>Export PDF</button>
+              <button className="tool-button" onClick={() => { exportAsCSV(voucherData, "receipt-register.csv"); setNotice("Receipt register exported"); }}><Download size={14}/>CSV</button>
+            </div>
+          </div>
+          <div id="export-financial" className="detail-panel" style={{padding:20,display:"grid",gap:10}}>
+            <FileText size={28} style={{color:"var(--primary)"}} />
+            <strong>Financial Summary</strong>
+            <span style={{fontSize:"0.82rem",color:"var(--muted)"}}>Collection rates and outstanding balances</span>
+            <div style={{display:"grid",gap:6}}>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Total Invoiced:</span><strong>{formatCurrency(totalInvoiced)}</strong></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Collected:</span><strong>{formatCurrency(totalCollected)}</strong></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Outstanding:</span><strong>{formatCurrency(totalOutstanding)}</strong></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Collection Rate:</span><strong>{totalInvoiced > 0 ? Math.round((totalCollected / totalInvoiced) * 100) : 0}%</strong></div>
+            </div>
+            <button className="tool-button" onClick={() => printElement("export-financial", "Financial Summary")}><Printer size={14}/>Export PDF</button>
+          </div>
+          <div id="export-cashbook-report" className="detail-panel" style={{padding:20,display:"grid",gap:10}}>
+            <FileText size={28} style={{color:"var(--primary)"}} />
+            <strong>Cashbook Report</strong>
+            <span style={{fontSize:"0.82rem",color:"var(--muted)"}}>Income and expense summary</span>
+            <div style={{display:"grid",gap:6}}>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Cash In:</span><strong style={{color:"#10b981"}}>{formatCurrency(cashIncome)}</strong></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Cash Out:</span><strong style={{color:"#ef4444"}}>{formatCurrency(cashExpense)}</strong></div>
+              <div style={{display:"flex",justifyContent:"space-between"}}><span>Balance:</span><strong>{formatCurrency(cashBalance)}</strong></div>
+            </div>
+            <button className="tool-button" onClick={() => printElement("export-cashbook-report", "Cashbook Report")}><Printer size={14}/>Export PDF</button>
+          </div>
+          <div id="export-quotations-report" className="detail-panel" style={{padding:20,display:"grid",gap:10}}>
+            <FileText size={28} style={{color:"var(--primary)"}} />
+            <strong>Quotations Report</strong>
+            <span style={{fontSize:"0.82rem",color:"var(--muted)"}}>All quotations summary</span>
+            <div style={{display:"grid",gap:4}}>
+              {quotations.slice(0, 5).map(q => (
+                <div key={q.id} style={{display:"flex",justifyContent:"space-between",fontSize:"0.82rem"}}>
+                  <span>{q.quotationNo} - {q.customer}</span>
+                  <strong>{formatCurrency(q.total)}</strong>
+                </div>
+              ))}
+              {quotations.length === 0 && <span style={{color:"var(--muted)"}}>No quotations</span>}
+            </div>
+            <button className="tool-button" onClick={() => printElement("export-quotations-report", "Quotations Report")}><Printer size={14}/>Export PDF</button>
+          </div>
+          <div id="export-requisitions-report" className="detail-panel" style={{padding:20,display:"grid",gap:10}}>
+            <FileText size={28} style={{color:"var(--primary)"}} />
+            <strong>Requisitions Report</strong>
+            <span style={{fontSize:"0.82rem",color:"var(--muted)"}}>All requisitions summary</span>
+            <div style={{display:"grid",gap:4}}>
+              {requisitions.slice(0, 5).map(r => (
+                <div key={r.id} style={{display:"flex",justifyContent:"space-between",fontSize:"0.82rem"}}>
+                  <span>{r.reqNo} - {r.department}</span>
+                  <strong>{formatCurrency(r.total)}</strong>
+                </div>
+              ))}
+              {requisitions.length === 0 && <span style={{color:"var(--muted)"}}>No requisitions</span>}
+            </div>
+            <button className="tool-button" onClick={() => printElement("export-requisitions-report", "Requisitions Report")}><Printer size={14}/>Export PDF</button>
+          </div>
         </div>
       </div>
     );

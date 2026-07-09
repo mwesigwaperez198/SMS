@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Users, UserPlus, FileText, Upload, Search, Download, X } from "lucide-react";
 import type { ConnectedData } from "../api";
+import { printElement } from "../utils/exportUtils";
 
 interface SecretaryWorkspaceProps {
   view: string;
@@ -184,9 +185,9 @@ export function SecretaryWorkspace({ view, data, onViewChange }: SecretaryWorksp
           <div className="office-filters">
             <label><Search size={15}/><input placeholder="Search name, admission no, class…" value={search} onChange={e => setSearch(e.target.value)} /></label>
             <button className="tool-button primary" onClick={() => onViewChange("Register Student")}><UserPlus size={15}/>New Admission</button>
-            <button className="tool-button" onClick={() => window.print()}><FileText size={15}/>Export</button>
+            <button className="tool-button" onClick={() => printElement("export-student-profiles")}><FileText size={15}/>Export</button>
           </div>
-          <div className="table-wrap">
+          <div id="export-student-profiles" className="table-wrap">
             <table>
               <thead><tr><th>Adm No</th><th>Name</th><th>Gender</th><th>Class</th><th>Guardian</th><th>Status</th><th></th></tr></thead>
               <tbody>

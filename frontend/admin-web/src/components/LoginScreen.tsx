@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { Lock, Shield, ArrowLeft } from "lucide-react";
-import type { Session, TwoFactorChallenge } from "../api";
-import type { RoleKey } from "../types";
-import { verify2faLogin, mapUserToSession, roleLabels, roleMap } from "../api";
+import type { FaceChallenge, Session, TwoFactorChallenge } from "../api";
+import { verify2faLogin } from "../api";
 import { roles } from "../data/mockData";
 
 interface LoginScreenProps {
@@ -15,9 +14,10 @@ interface LoginScreenProps {
   onSwitchToSignUp?: () => void;
   twoFactorChallenge?: TwoFactorChallenge | null;
   onClearChallenge?: () => void;
+  on2faResult?: (result: Session | FaceChallenge) => void;
 }
 
-export function LoginScreen({ loading, error, onLogin, onSession, onForgotPassword, onSwitchToRegister, onSwitchToSignUp, twoFactorChallenge: externalChallenge, onClearChallenge }: LoginScreenProps) {
+export function LoginScreen({ loading, error, onLogin, onSession, onForgotPassword, onSwitchToRegister, onSwitchToSignUp, twoFactorChallenge: externalChallenge, onClearChallenge, on2faResult }: LoginScreenProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showDemo, setShowDemo] = useState(false);
@@ -27,7 +27,7 @@ export function LoginScreen({ loading, error, onLogin, onSession, onForgotPasswo
 
   const effectiveChallenge = externalChallenge ?? null;
 
-  const handleDemoLogin = (roleKey: RoleKey) => {
+  const handleDemoLogin = (roleKey: string) => {
     const role = roles.find(r => r.key === roleKey);
     onSession({
       token: "demo-token",
@@ -59,8 +59,11 @@ export function LoginScreen({ loading, error, onLogin, onSession, onForgotPasswo
     setTwoFactorError(null);
     try {
       const result = await verify2faLogin(effectiveChallenge.temp_token, twoFactorCode);
-      const session = mapUserToSession(result);
-      onSession(session);
+      if (on2faResult) {
+        on2faResult(result);
+      } else if (!("requires_face" in result)) {
+        onSession(result);
+      }
     } catch (err: any) {
       setTwoFactorError(err.message);
     } finally {

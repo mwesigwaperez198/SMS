@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ShieldCheck, Server, AlertTriangle, CheckCircle, Clock, Activity, Settings, Ticket, Search, FileText, Key, CreditCard, Users, Eye, Ban, Check, X } from "lucide-react";
 import type { AuditLogItem, KeyItem, PlanItem, PlatformStats, RegistrationRequestItem, SchoolAdminItem, PlatformUserItem } from "../api";
+import { printElement, exportAsCSV } from "../utils/exportUtils";
 import {
   fetchPlatformStats, fetchPlatformSchools, toggleSchoolStatus,
   fetchRegistrations, approveRegistration,
@@ -122,9 +123,9 @@ export function SuperAdminWorkspace({ view, data }: SuperAdminWorkspaceProps) {
               <option value="suspended">Suspended</option>
               <option value="expired">Expired</option>
             </select>
-            <button className="tool-button" onClick={() => window.print()}><FileText size={15}/>Export</button>
+            <button className="tool-button" onClick={() => printElement("export-super-admin-schools")}><FileText size={15}/>Export</button>
           </div>
-          <div className="table-wrap">
+          <div id="export-super-admin-schools" className="table-wrap">
             <table>
               <thead><tr><th>Code</th><th>School Name</th><th>Contact</th><th>Students</th><th>Users</th><th>Status</th><th>Since</th><th>Actions</th></tr></thead>
               <tbody>
@@ -377,9 +378,9 @@ export function SuperAdminWorkspace({ view, data }: SuperAdminWorkspaceProps) {
         <div className="table-panel">
           <div className="office-filters">
             <label><Search size={15}/><input placeholder="Search action, actor…" value={search} onChange={e => setSearch(e.target.value)} /></label>
-            <button className="tool-button" onClick={() => window.print()}><FileText size={15}/>Export</button>
+            <button className="tool-button" onClick={() => printElement("export-audit-log")}><FileText size={15}/>Export</button>
           </div>
-          <div className="table-wrap">
+          <div id="export-audit-log" className="table-wrap">
             <table>
               <thead><tr><th>ID</th><th>Action</th><th>Actor</th><th>Entity</th><th>Detail</th><th>Timestamp</th></tr></thead>
               <tbody>

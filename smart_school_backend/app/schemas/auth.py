@@ -67,5 +67,15 @@ class TwoFactorStatusResponse(BaseModel):
     is_2fa_enabled: bool
 
 
+class FaceLoginResponse(BaseModel):
+    requires_face: bool = True
+    temp_token: str
+
+
+class FaceLoginVerifyRequest(BaseModel):
+    temp_token: str
+    image_data: str
+
+
 class ProfileResponse(BaseModel):
     user: UserRead

@@ -35,7 +35,7 @@ const REQUEST_TIMEOUT = 30_000;
 // In-memory token refresh lock to prevent multiple simultaneous refreshes
 let refreshPromise: Promise<string> | null = null;
 
-async function apiRequest<T>(path: string, init?: RequestInit, timeout?: number): Promise<T> {
+export async function apiRequest<T>(path: string, init?: RequestInit, timeout?: number): Promise<T> {
   const url = path.startsWith("http") ? path : `${API_URL}${path}`;
   const token = sessionStorage.getItem("novara_token");
   const ms = timeout ?? REQUEST_TIMEOUT;
@@ -127,6 +127,7 @@ export interface Session {
     role: string;
     role_key: RoleKey;
     school: string;
+    profile_photo?: string;
   };
 }
 
@@ -153,7 +154,8 @@ export function mapUserToSession(result: { access_token: string; refresh_token: 
       full_name: result.user.name,
       role: roleLabels[roleKey] ?? "User",
       role_key: roleKey,
-      school: result.user.school?.name ?? "NOVARA School"
+      school: result.user.school?.name ?? "NOVARA School",
+      profile_photo: (result.user as any).profile_photo ?? ""
     }
   };
 }
@@ -163,7 +165,14 @@ export interface TwoFactorChallenge {
   temp_token: string;
 }
 
-export async function login(email: string, password: string): Promise<Session | TwoFactorChallenge> {
+export interface FaceChallenge {
+  requires_face: true;
+  temp_token: string;
+}
+
+export type LoginChallenge = Session | TwoFactorChallenge | FaceChallenge;
+
+export async function login(email: string, password: string): Promise<LoginChallenge> {
   const result = await apiRequest<any>("/api/v1/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
@@ -172,6 +181,32 @@ export async function login(email: string, password: string): Promise<Session | 
   if (result.requires_2fa) {
     return { requires_2fa: true, temp_token: result.temp_token };
   }
+
+  if (result.requires_face) {
+    return { requires_face: true, temp_token: result.temp_token };
+  }
+
+  return mapUserToSession(result);
+}
+
+export async function verify2faLogin(tempToken: string, code: string): Promise<Session | FaceChallenge> {
+  const result = await apiRequest<any>("/api/v1/auth/verify-2fa-login", {
+    method: "POST",
+    body: JSON.stringify({ temp_token: tempToken, code }),
+  });
+
+  if (result.requires_face) {
+    return { requires_face: true, temp_token: result.temp_token };
+  }
+
+  return mapUserToSession(result);
+}
+
+export async function verifyFaceLogin(tempToken: string, imageData: string): Promise<Session> {
+  const result = await apiRequest<any>("/api/v1/auth/verify-face-login", {
+    method: "POST",
+    body: JSON.stringify({ temp_token: tempToken, image_data: imageData }),
+  });
 
   return mapUserToSession(result);
 }
@@ -526,6 +561,7 @@ export async function completeRegistration(payload: {
   password: string;
   full_name: string;
   phone?: string;
+  profile_photo?: string;
 }): Promise<{ message: string; school_name: string; school_code: string }> {
   return apiRequest("/api/v1/registration/complete", {
     method: "POST",

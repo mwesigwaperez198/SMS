@@ -1,5 +1,5 @@
-import { Bell, LogOut, Search, User } from "lucide-react";
-import { useEffect, useRef, type ReactNode } from "react";
+import { Bell, LogOut, Menu, Search, User, X } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { RoleKey, RoleProfile } from "../types";
 import type { Session } from "../api";
 import { schoolProfile } from "../data/mockData";
@@ -43,6 +43,7 @@ export function AppShell({
   const ActiveIcon = activeRole.icon;
   const visibleNav = navItems ?? activeRole.nav;
   const searchRef = useRef<HTMLInputElement>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -59,16 +60,22 @@ export function AppShell({
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
+  const closeSidebar = () => setSidebarOpen(false);
+
   return (
     <div className="app-shell-modern" data-role={activeRole.key}>
-      <aside className="sidebar-modern">
+      <div className={`sidebar-overlay ${sidebarOpen ? "open" : ""}`} onClick={closeSidebar} />
+      <aside className={`sidebar-modern ${sidebarOpen ? "open" : ""}`}>
           <div className="sidebar-brand">
-          <div className="brand-icon"><NovaraLogo size={24} /></div>
-          <div className="brand-text">
-            <strong>{schoolProfile.name}</strong>
-            <span>{schoolProfile.term} · {schoolProfile.academicYear}</span>
+            <div className="brand-icon"><NovaraLogo size={24} /></div>
+            <div className="brand-text">
+              <strong>{schoolProfile.name}</strong>
+              <span>{schoolProfile.term} · {schoolProfile.academicYear}</span>
+            </div>
+            <button type="button" className="mobile-menu-btn" onClick={closeSidebar} style={{marginLeft:"auto"}}>
+              <X size={20} />
+            </button>
           </div>
-        </div>
 
         {session && (
           <div className="user-card">
@@ -116,6 +123,9 @@ export function AppShell({
       <div className="main-wrapper">
         <header className="topbar-modern" data-role={activeRole.key}>
           <div className="workspace-header">
+            <button type="button" className="mobile-menu-btn" onClick={() => setSidebarOpen(true)}>
+              <Menu size={20} />
+            </button>
             <div className="workspace-icon-modern" style={{ color: activeRole.accent, borderColor: activeRole.accent + '40' }}>
               <ActiveIcon size={24} />
             </div>

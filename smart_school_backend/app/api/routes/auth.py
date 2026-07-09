@@ -8,6 +8,8 @@ from app.db.session import get_db
 from app.models.user import User
 from app.schemas.auth import (
     AccessTokenResponse,
+    FaceLoginResponse,
+    FaceLoginVerifyRequest,
     ForgotPasswordRequest,
     LoginRequest,
     MessageResponse,
@@ -37,12 +39,12 @@ from app.services.auth_service import (
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 
-@router.post("/login", response_model=TokenResponse | TwoFactorLoginResponse)
+@router.post("/login", response_model=TokenResponse | TwoFactorLoginResponse | FaceLoginResponse)
 def login(
     request: Request,
     payload: LoginRequest,
     db: Session = Depends(get_db),
-) -> TokenResponse | TwoFactorLoginResponse:
+) -> TokenResponse | TwoFactorLoginResponse | FaceLoginResponse:
     user = authenticate_user(db, str(payload.email).lower(), payload.password)
     if not user:
         raise HTTPException(
@@ -55,6 +57,11 @@ def login(
         temp_token = create_temp_token(str(user.id))
         return TwoFactorLoginResponse(requires_2fa=True, temp_token=temp_token)
 
+    FACE_AUTH_ROLES = {1, 10}
+    if user.role_id in FACE_AUTH_ROLES and user.face_descriptor:
+        temp_token = create_temp_token(str(user.id))
+        return FaceLoginResponse(requires_face=True, temp_token=temp_token)
+
     return TokenResponse(
         access_token=build_user_token(user),
         refresh_token=build_refresh_token(user),
@@ -62,11 +69,11 @@ def login(
     )
 
 
-@router.post("/verify-2fa-login", response_model=TokenResponse)
+@router.post("/verify-2fa-login", response_model=TokenResponse | FaceLoginResponse)
 def verify_2fa_login(
     payload: TwoFactorLoginVerifyRequest,
     db: Session = Depends(get_db),
-) -> TokenResponse:
+) -> TokenResponse | FaceLoginResponse:
     from app.services.auth_service import verify_totp_code
 
     token_data = decode_temp_token(payload.temp_token)
@@ -96,6 +103,61 @@ def verify_2fa_login(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid 2FA code",
+        )
+
+    FACE_AUTH_ROLES = {1, 10}
+    if user.role_id in FACE_AUTH_ROLES and user.face_descriptor:
+        temp_token = create_temp_token(str(user.id))
+        return FaceLoginResponse(requires_face=True, temp_token=temp_token)
+
+    return TokenResponse(
+        access_token=build_user_token(user),
+        refresh_token=build_refresh_token(user),
+        user=user,
+    )
+
+
+@router.post("/verify-face-login", response_model=TokenResponse)
+def verify_face_login(
+    payload: FaceLoginVerifyRequest,
+    db: Session = Depends(get_db),
+) -> TokenResponse:
+    from app.services.face_service import verify_face
+
+    token_data = decode_temp_token(payload.temp_token)
+    if not token_data or not token_data.get("sub"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired face verification session",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    try:
+        user_id = int(token_data["sub"])
+    except (TypeError, ValueError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid face verification session",
+        )
+
+    user = db.get(User, user_id)
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found or inactive",
+        )
+
+    if not user.face_descriptor:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Face not registered. Please register your face in Profile settings.",
+        )
+
+    match = verify_face(payload.image_data, user.face_descriptor)
+    if not match:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Face verification failed. Try again with better lighting.",
         )
 
     return TokenResponse(

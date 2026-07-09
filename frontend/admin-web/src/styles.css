@@ -1114,42 +1114,176 @@ tbody tr:hover {
   margin-top: 14px;
 }
 
+/* ─── Responsive Design ─────────────────────────────────────── */
+
+/* Hamburger menu for mobile */
+.mobile-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.05);
+  color: #e2e8f0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
 @media (max-width: 1100px) {
   .app-shell-modern {
     grid-template-columns: 1fr;
   }
 
   .sidebar-modern {
-    position: static;
-    height: auto;
+    position: fixed;
+    top: 0;
+    left: -300px;
+    width: 280px;
+    height: 100vh;
+    z-index: 100;
+    transition: left 0.3s ease;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.3);
+  }
+
+  .sidebar-modern.open {
+    left: 0;
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 99;
+    display: none;
+  }
+
+  .sidebar-overlay.open {
+    display: block;
+  }
+
+  .mobile-menu-btn {
+    display: inline-flex;
   }
 
   .nav-modern {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .workspace-grid,
   .teacher-board {
     grid-template-columns: 1fr;
   }
+
+  .topbar-actions-modern .search-modern {
+    display: none;
+  }
+
+  .mobile-search {
+    display: flex !important;
+    margin: 0 0 12px;
+  }
+}
+
+@media (max-width: 960px) {
+  .content-modern {
+    padding: 16px;
+  }
+
+  .topbar-modern {
+    padding: 12px 16px;
+    gap: 12px;
+  }
+
+  .workspace-header {
+    gap: 10px;
+  }
+
+  .workspace-icon-modern {
+    width: 36px;
+    height: 36px;
+  }
+
+  .workspace-icon-modern svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .workspace-view {
+    font-size: 1.1rem;
+  }
+
+  .workspace-role {
+    font-size: 0.7rem;
+  }
+
+  .dashboard-grid.improved {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .compact-stats,
+  .notification-strip {
+    grid-template-columns: repeat(2, 1fr);
+    grid-column: 1;
+  }
+
+  .third-panel,
+  .half-panel {
+    grid-column: 1;
+  }
+
+  .teacher-board {
+    grid-template-columns: 1fr;
+  }
+
+  .attendance-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .status-controls {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .attendance-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .office-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .book-grid-cards,
+  .library-book-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 760px) {
   .content-modern,
   .sidebar-modern {
-    padding: 16px;
+    padding: 12px;
   }
 
-  .topbar-modern,
   .topbar-actions-modern {
-    align-items: stretch;
-    flex-direction: column;
-    min-width: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .sidebar-modern {
+    padding: 16px 14px;
+    gap: 14px;
   }
 
   .metrics-row,
   .login-grid,
-  .nav-modern,
   .quick-grid {
     grid-template-columns: 1fr;
   }
@@ -1157,6 +1291,280 @@ tbody tr:hover {
   .panel-header {
     align-items: flex-start;
     flex-direction: column;
+    gap: 10px;
+  }
+
+  .panel {
+    padding: 12px;
+  }
+
+  table {
+    min-width: 100%;
+    font-size: 0.82rem;
+  }
+
+  th, td {
+    padding: 8px 6px;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  .compact-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .compact-stat {
+    min-height: 80px;
+    padding: 10px;
+  }
+
+  .compact-stat strong {
+    font-size: 1.1rem;
+  }
+
+  .notification-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .notification-card {
+    min-height: 64px;
+    padding: 10px;
+  }
+
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sms-groups {
+    grid-template-columns: 1fr;
+  }
+
+  .approval-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .approval-row button {
+    width: 100%;
+  }
+
+  .bar-row {
+    grid-template-columns: 1fr 2fr 40px;
+    font-size: 0.78rem;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .metric {
+    padding: 12px;
+    min-height: 80px;
+    gap: 8px;
+  }
+
+  .metric-icon {
+    width: 32px;
+    height: 32px;
+  }
+
+  .metric-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .metric-body strong {
+    font-size: 1.1rem;
+  }
+
+  .metric-body span {
+    font-size: 0.7rem;
+  }
+
+  .student-hero-grad {
+    flex-direction: column;
+    text-align: center;
+    padding: 16px;
+    min-height: auto;
+  }
+
+  .student-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .student-tile {
+    aspect-ratio: auto;
+    min-height: 64px;
+    font-size: 10px;
+  }
+
+  .detail-panel {
+    padding: 12px !important;
+  }
+
+  .office-filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .office-filters label {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .office-filters select {
+    width: 100%;
+  }
+
+  .office-form {
+    padding: 12px;
+  }
+
+  .office-form label {
+    font-size: 12px;
+  }
+
+  .form-row-2,
+  .form-row-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .list-row {
+    grid-template-columns: 16px minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 10px 12px;
+    min-height: 56px;
+  }
+
+  .book-grid-cards,
+  .library-book-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .library-filters {
+    flex-direction: column;
+  }
+
+  .library-search,
+  .library-select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .doc-actions {
+    flex-direction: column;
+  }
+
+  .doc-actions button {
+    width: 100%;
+  }
+
+  .flag-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .login-screen {
+    padding: 16px;
+  }
+
+  .login-card {
+    padding: 20px;
+    gap: 12px;
+  }
+
+  .login-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  .demo-roles {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .modal-panel {
+    padding: 20px;
+    width: 95%;
+    max-height: 90vh;
+  }
+
+  .modal-overlay {
+    padding: 12px;
+  }
+
+  #profile-modal .profile-grid-detail {
+    grid-template-columns: 1fr;
+  }
+
+  .footer-modern {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+    padding: 12px 16px;
+  }
+
+  .tab-bar {
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    font-size: 0.78rem;
+    min-height: 32px;
+  }
+
+  .import-dropzone {
+    padding: 24px 16px;
+    margin: 8px;
+  }
+
+  .mark-input {
+    width: 48px;
+  }
+}
+
+@media (max-width: 480px) {
+  .compact-stats,
+  .metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .student-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .demo-roles {
+    grid-template-columns: 1fr;
+  }
+
+  .book-grid-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .topbar-modern {
+    padding: 8px 12px;
+  }
+
+  .content-modern {
+    padding: 8px;
+  }
+
+  .workspace-view {
+    font-size: 1rem;
+  }
+
+  .search-modern {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .sidebar-modern {
+    width: 260px;
+    left: -260px;
   }
 }
 

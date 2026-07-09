@@ -15,3 +15,5 @@ pytest>=8.3,<9.0
 pytest-cov>=6.0,<7.0
 httpx>=0.28,<1.0
 pyotp>=2.9,<3.0
+opencv-python-headless>=4.10,<5.0
+deepface>=0.0.79,<1.0

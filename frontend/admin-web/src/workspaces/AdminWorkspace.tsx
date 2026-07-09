@@ -2,6 +2,7 @@ import { useState } from "react";
 import { UserRoundCog, Users, Download, FileText, Database, User, GraduationCap, Search, MessageSquare, Bell, CheckCircle, XCircle, RotateCcw, Send, Phone, Mail, ArrowRight, ShieldCheck, TrendingUp, BarChart3, PieChart, Activity, AlertTriangle, Eye, Printer, RefreshCw } from "lucide-react";
 import type { ConnectedData } from "../api";
 import { sendSmsBatch, sendRoleNotification } from "../api";
+import { printElement, exportAsCSV } from "../utils/exportUtils";
 
 interface AdminWorkspaceProps {
   view: string;
@@ -141,9 +142,9 @@ export function AdminWorkspace({ view, data, onViewChange }: AdminWorkspaceProps
           <div className="office-filters">
             <label><Search size={15}/><input placeholder="Search name, admission no, class…" value={search} onChange={e => setSearch(e.target.value)} /></label>
             <button className="tool-button primary" onClick={() => onViewChange("Register Student")}><Users size={15}/>Add Student</button>
-            <button className="tool-button" onClick={() => window.print()}><FileText size={15}/>Export</button>
+            <button className="tool-button" onClick={() => printElement("export-students")}><FileText size={15}/>Export</button>
           </div>
-          <div className="table-wrap">
+          <div id="export-students" className="table-wrap">
             <table>
               <thead><tr><th>Adm No</th><th>Name</th><th>Gender</th><th>Class</th><th>Guardian</th><th>Status</th></tr></thead>
               <tbody>
@@ -283,7 +284,7 @@ export function AdminWorkspace({ view, data, onViewChange }: AdminWorkspaceProps
             <strong style={{fontSize:"0.9rem", color: accent}}>Full System Analysis</strong>
             <BarChart3 size={18} style={{color:accent}}/>
           </div>
-          <div style={{display:"grid",gap:16,padding:16}}>
+          <div id="export-admin-report" style={{display:"grid",gap:16,padding:16}}>
             {reportSections.map(section => (
               <div key={section.title} className="detail-panel" style={{padding:16, borderTop: `3px solid ${accent}`}}>
                 <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
@@ -302,7 +303,7 @@ export function AdminWorkspace({ view, data, onViewChange }: AdminWorkspaceProps
             ))}
           </div>
           <div style={{display:"flex",gap:10,padding:"0 16px 16px"}}>
-            <button className="tool-button primary" onClick={() => window.print()}><Printer size={15}/>Generate Full Report</button>
+            <button className="tool-button primary" onClick={() => printElement("export-admin-report", "Admin Report")}><Printer size={15}/>Generate Full Report</button>
             <button className="tool-button"><Download size={15}/>Export PDF</button>
             <button className="tool-button"><Database size={15}/>Export Data</button>
           </div>

@@ -16,5 +16,10 @@
 - Code style: clean, personalized, human-written feel
 - UI/UX: research, compare, and choose the best design before building
 
+## Git & Auth
+- Remote URLs must NOT contain embedded tokens (use gh auth instead)
+- Push after every sanitized & verified testing session
+- Use the same gh auth (`mwesigwaperez198`) for all repos across all projects
+
 ## Workflow
 Plan → Code → Debug → Produce (with best UI/UX)

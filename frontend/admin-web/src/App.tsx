@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import {
   ShieldCheck, Activity, AlertTriangle, TrendingUp, Printer, Download,
-  Users, BarChart3, Eye, RotateCcw
+  Users, BarChart3, Eye, RotateCcw, Camera, Scan, ArrowLeft
 } from "lucide-react";
 import {
   approvalDecision as submitApprovalDecision,
@@ -13,17 +13,21 @@ import {
   resetPassword,
   sendSmsBatch,
   shareFinanceDocument,
-  shareRequestedBooks
+  shareRequestedBooks,
+  verifyFaceLogin
 } from "./api";
-import type { ConnectedData, Session, TwoFactorChallenge } from "./api";
+import type { ConnectedData, FaceChallenge, Session, TwoFactorChallenge } from "./api";
 import { AppShell } from "./components/AppShell";
 import { DataTable } from "./components/DataTable";
+import { printElement, exportAsCSV } from "./utils/exportUtils";
 import { LandingPage } from "./components/LandingPage";
 import { LoginScreen } from "./components/LoginScreen";
 import { ForgotPasswordScreen } from "./components/ForgotPasswordScreen";
 import { RegisterSchoolScreen } from "./components/RegisterSchoolScreen";
 import { SignUpScreen } from "./components/SignUpScreen";
 import { TwoFactorSetup } from "./components/TwoFactorSetup";
+import { PhotoCapture } from "./components/PhotoCapture";
+import { FaceVerification } from "./components/FaceVerification";
 import { StatusBadge } from "./components/StatusBadge";
 import { roles } from "./data/mockData";
 import type { RoleKey } from "./types";
@@ -119,6 +123,7 @@ function App() {
   const [showRegister, setShowRegister] = useState(false);
   const [showSignUp, setShowSignUp] = useState(false);
   const [twoFactorChallenge, setTwoFactorChallenge] = useState<TwoFactorChallenge | null>(null);
+  const [pendingFaceToken, setPendingFaceToken] = useState<string | null>(null);
 
   const activeRole = useMemo(() => roles.find((role) => role.key === roleKey) ?? roles[1], [roleKey]);
 
@@ -159,6 +164,8 @@ function App() {
     setNotice(`Logged in as ${nextSession.user.full_name}`);
   };
 
+  const FACE_AUTH_ROLES: RoleKey[] = ["super-admin", "admin"];
+
   const handleLogin = async (email: string, password: string) => {
     setLoading(true);
     setConnectionError(null);
@@ -167,6 +174,10 @@ function App() {
       const result = await login(email, password);
       if ("requires_2fa" in result) {
         setTwoFactorChallenge(result as TwoFactorChallenge);
+        return;
+      }
+      if ("requires_face" in result) {
+        setPendingFaceToken((result as FaceChallenge).temp_token);
         return;
       }
       const nextSession = result as Session;
@@ -179,6 +190,26 @@ function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handle2faLoginResult = (result: Session | FaceChallenge) => {
+    if ("requires_face" in result) {
+      setPendingFaceToken(result.temp_token);
+    } else {
+      const nextSession = result as Session;
+      setSession(nextSession);
+      setRoleKey(nextSession.user.role_key);
+      setView("Home");
+      setNotice(`Logged in as ${nextSession.user.full_name}`);
+    }
+  };
+
+  const handleFaceVerified = (nextSession: Session) => {
+    setPendingFaceToken(null);
+    setSession(nextSession);
+    setRoleKey(nextSession.user.role_key);
+    setView("Home");
+    setNotice(`Logged in as ${nextSession.user.full_name}`);
   };
 
   const onApprove = async (approvalId: string, decision: string) => {
@@ -212,7 +243,63 @@ function App() {
       return <SignUpScreen onBack={() => setShowSignUp(false)} onComplete={() => { setShowSignUp(false); }} />;
     }
     if (twoFactorChallenge) {
-      return <LoginScreen loading={false} error={null} onLogin={handleLogin} onSession={handleSession} twoFactorChallenge={twoFactorChallenge} onClearChallenge={() => setTwoFactorChallenge(null)} />;
+      return <LoginScreen loading={false} error={null} onLogin={handleLogin} onSession={handleSession} twoFactorChallenge={twoFactorChallenge} onClearChallenge={() => setTwoFactorChallenge(null)} on2faResult={handle2faLoginResult} />;
+    }
+    if (pendingFaceToken) {
+      return (
+        <main className="login-screen">
+          <div className="login-background-orb login-orb-1" />
+          <div className="login-background-orb login-orb-2" />
+          <section className="login-panel">
+            <div className="login-brand">
+              <div className="brand-mark">N</div>
+              <div>
+                <p>Smart School Management</p>
+                <h1>Face Verification</h1>
+              </div>
+            </div>
+            <div className="login-card">
+              <div className="login-card-title">
+                <Scan size={22} />
+                <div>
+                  <p>Enhanced security required</p>
+                  <h2>Verify your identity</h2>
+                </div>
+              </div>
+              <p style={{ color: "var(--muted)", fontSize: "0.88rem", margin: 0 }}>
+                This role requires facial verification for login.
+              </p>
+              <div style={{ marginTop: 8 }}>
+                <FaceVerification
+                  mode="verify"
+                  roleKey=""
+                  loading={loading}
+                  onCustomVerify={async (imageData: string) => {
+                    if (!pendingFaceToken) return;
+                    setLoading(true);
+                    try {
+                      const nextSession = await verifyFaceLogin(pendingFaceToken, imageData);
+                      handleFaceVerified(nextSession);
+                    } catch (err: any) {
+                      throw new Error(err.message || "Face verification failed");
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                  onComplete={(success) => {
+                    if (!success) setPendingFaceToken(null);
+                  }}
+                />
+              </div>
+              <div className="login-actions" style={{ gridTemplateColumns: "1fr" }}>
+                <button type="button" className="secondary-button" onClick={() => setPendingFaceToken(null)}>
+                  <ArrowLeft size={16} /> Back to Login
+                </button>
+              </div>
+            </div>
+          </section>
+        </main>
+      );
     }
     return (
       <LoginScreen
@@ -645,11 +732,14 @@ function ReportsView({ data }: { data: ConnectedData }) {
       { label: "Audit Entries", value: data.auditLogs.length },
     ]},
   ];
+  const reportData = reportSections.flatMap(s =>
+    s.metrics.map(m => ({ Section: s.title, Metric: m.label, Value: m.value ?? "-" }))
+  );
   return (
     <section className="content-grid">
       <section className="panel">
         <PanelTitle eyebrow="System Analysis" title="Full Report" />
-        <div style={{display:"grid",gap:16}}>
+        <div id="export-full-report" style={{display:"grid",gap:16}}>
           {reportSections.map(section => (
             <div key={section.title} className="panel" style={{padding:16}}>
               <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:12}}>
@@ -668,8 +758,8 @@ function ReportsView({ data }: { data: ConnectedData }) {
           ))}
         </div>
         <div style={{display:"flex",gap:10,marginTop:16}}>
-          <button className="primary-button" onClick={() => window.print()}><Printer size={15}/>Generate Full Report</button>
-          <button className="secondary-button"><Download size={15}/>Export PDF</button>
+          <button className="primary-button" onClick={() => printElement("export-full-report", "System Report")}><Printer size={15}/>Generate Full Report</button>
+          <button className="secondary-button" onClick={() => { exportAsCSV(reportData, "system-report.csv"); }}><Download size={15}/>Export CSV</button>
         </div>
       </section>
     </section>
@@ -796,14 +886,19 @@ function ProfileModal({ session, data, roleKey, onClose }: { session: Session; d
   if (!data) return null;
   const accent = ROLE_COLORS[roleKey] ?? "#0891b2";
   const roleNav = data.nav;
+  const [photo, setPhoto] = useState(session.user.profile_photo || "");
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-panel" onClick={e => e.stopPropagation()} style={{borderTop:`4px solid ${accent}`}}>
+      <div id="profile-modal" className="modal-panel" onClick={e => e.stopPropagation()} style={{borderTop:`4px solid ${accent}`}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:20}}>
           <div style={{display:"flex",alignItems:"center",gap:14}}>
-            <div className="user-avatar" style={{width:52,height:52,fontSize:"1.3rem",background:`linear-gradient(135deg,${accent},#764ba2)`}}>
-              {session.user.full_name.charAt(0).toUpperCase()}
-            </div>
+            {photo ? (
+              <img src={photo} alt="" style={{width:52,height:52,borderRadius:"50%",objectFit:"cover",border:`3px solid ${accent}`}} />
+            ) : (
+              <div className="user-avatar" style={{width:52,height:52,fontSize:"1.3rem",background:`linear-gradient(135deg,${accent},#764ba2)`}}>
+                {session.user.full_name.charAt(0).toUpperCase()}
+              </div>
+            )}
             <div>
               <strong style={{fontSize:"1.1rem"}}>{session.user.full_name}</strong>
               <br /><span style={{color:"var(--muted)",fontSize:"0.85rem"}}>{session.user.role} · {session.user.school}</span>
@@ -812,7 +907,12 @@ function ProfileModal({ session, data, roleKey, onClose }: { session: Session; d
           <button className="tool-button" style={{minHeight:32,minWidth:32,padding:0}} onClick={onClose}>✕</button>
         </div>
 
-        <div style={{display:"grid",gridTemplateColumns:"repeat(2,1fr)",gap:12,marginBottom:20}}>
+        <div style={{marginBottom:16}}>
+          <span style={{fontSize:"0.82rem",color:"var(--muted)",fontWeight:600}}>Passport Photo</span>
+          <PhotoCapture onPhoto={setPhoto} initialPhoto={photo} compact />
+        </div>
+
+        <div className="profile-grid-detail">
           <div className="detail-cell" style={{borderLeft:`3px solid ${accent}`}}>
             <span>Email</span>
             <strong>{session.user.email}</strong>
@@ -831,7 +931,7 @@ function ProfileModal({ session, data, roleKey, onClose }: { session: Session; d
           </div>
         </div>
 
-        <div style={{display:"flex",flexWrap:"wrap",gap:8}}>
+        <div style={{display:"flex",flexWrap:"wrap",gap:8,marginTop:12}}>
           {roleNav.map(n => (
             <span key={n} className="badge" style={{borderColor:`${accent}40`,color:accent,background:`${accent}15`}}>{n}</span>
           ))}

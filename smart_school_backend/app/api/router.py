@@ -5,6 +5,7 @@ from app.api.routes import (
     assessments,
     attendance,
     auth,
+    face_auth,
     fees,
     finance,
     library,
@@ -21,6 +22,7 @@ from app.api.routes import (
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
+api_router.include_router(face_auth.router)
 api_router.include_router(assessments.router)
 api_router.include_router(registration.router)
 api_router.include_router(platform.router)

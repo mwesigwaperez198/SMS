@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { UserPlus, ArrowLeft, KeyRound, Eye, EyeOff } from "lucide-react";
+import { UserPlus, ArrowLeft, KeyRound, Eye, EyeOff, Camera } from "lucide-react";
 import { completeRegistration } from "../api";
+import { PhotoCapture } from "./PhotoCapture";
 
 interface SignUpScreenProps {
   onBack: () => void;
@@ -16,6 +17,7 @@ export function SignUpScreen({ onBack, onComplete }: SignUpScreenProps) {
     password: "",
     confirm: "",
   });
+  const [profilePhoto, setProfilePhoto] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +30,10 @@ export function SignUpScreen({ onBack, onComplete }: SignUpScreenProps) {
     e.preventDefault();
     setError(null);
 
+    if (!profilePhoto) {
+      setError("Passport photo is required for all users");
+      return;
+    }
     if (form.password !== form.confirm) {
       setError("Passwords do not match");
       return;
@@ -45,6 +51,7 @@ export function SignUpScreen({ onBack, onComplete }: SignUpScreenProps) {
         password: form.password,
         full_name: form.full_name,
         phone: form.phone || undefined,
+        profile_photo: profilePhoto,
       });
       setResult(`Account created for ${res.school_name} (${res.school_code}). You can now log in.`);
     } catch (err: any) {
@@ -131,6 +138,10 @@ export function SignUpScreen({ onBack, onComplete }: SignUpScreenProps) {
               <span className="field-label">Confirm Password *</span>
               <input type="password" value={form.confirm} onChange={set("confirm")} placeholder="Repeat password" className="field-input" required />
             </label>
+            <div className="form-field">
+              <span className="field-label">Passport Photo *</span>
+              <PhotoCapture onPhoto={setProfilePhoto} />
+            </div>
           </div>
 
           {error && <div className="login-error"><span className="error-icon">⚠</span>{error}</div>}

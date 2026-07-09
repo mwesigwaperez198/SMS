@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { LibraryBig, Upload, BookOpen, Package, AlertCircle, Search, Plus, RotateCcw, FileText, Users } from "lucide-react";
 import type { ConnectedData } from "../api";
+import { printElement } from "../utils/exportUtils";
 
 interface LibrarianWorkspaceProps {
   view: string;
@@ -84,9 +85,9 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
           <div className="table-panel">
             <div className="office-filters">
               <label><Search size={15} /><input placeholder="Search title or code…" value={search} onChange={e => setSearch(e.target.value)} /></label>
-              <button className="tool-button primary" onClick={() => window.print()}><FileText size={15} />Export PDF</button>
+              <button className="tool-button primary" onClick={() => printElement("export-library-catalog")}><FileText size={15} />Export PDF</button>
             </div>
-            <div className="table-wrap">
+            <div id="export-library-catalog" className="table-wrap">
               <table>
                 <thead>
                   <tr><th>Code</th><th>Title</th><th>Author</th><th>Shelf</th><th>Available</th><th>Borrowed</th><th>Status</th></tr>
@@ -352,7 +353,7 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
               <FileText size={28} style={{color:"var(--primary)"}} />
               <strong>{title}</strong>
               <span style={{fontSize:"0.82rem",color:"var(--muted)"}}>{desc}</span>
-              <button className="tool-button" onClick={() => window.print()}><FileText size={14}/>Export</button>
+              <button className="tool-button" onClick={() => printElement("export-" + title.toLowerCase().replace(/\s+/g, "-"))}><FileText size={14}/>Export</button>
             </div>
           ))}
         </div>
