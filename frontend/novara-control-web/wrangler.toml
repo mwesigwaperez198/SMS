@@ -4,4 +4,4 @@ compatibility_date = "2026-07-09"
 pages_build_output_dir = "dist"
 
 [env.production]
-vars = { VITE_API_URL = "https://sms-msku.onrender.com/api/v1" }
+vars = { VITE_API_URL = "" }
