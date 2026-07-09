@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import type { NovaraAdmin } from "../api/types";
-import { loginAdmin, setToken, getToken } from "../api/client";
+import { loginAdmin } from "../api/services";
+import { setToken } from "../api/client";
 
 interface AuthContextType {
   admin: NovaraAdmin | null;
