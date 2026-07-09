@@ -47,7 +47,7 @@ def novara_login(payload: NovaraLoginRequest, db: Session = Depends(get_db)):
 
     token = build_user_token(user)
     return NovaraSessionResponse(
-        token=token.access_token,
+        token=token,
         admin={"id": user.id, "email": user.email, "name": user.name},
     )
 
