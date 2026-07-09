@@ -593,17 +593,6 @@ export async function disable2fa(code: string): Promise<{ detail: string }> {
   });
 }
 
-export async function verify2faLogin(tempToken: string, code: string): Promise<{
-  access_token: string;
-  refresh_token: string;
-  user: { id: number; name: string; email: string; role_id: number; school_id: number | null };
-}> {
-  return apiRequest("/api/v1/auth/verify-2fa-login", {
-    method: "POST",
-    body: JSON.stringify({ temp_token: tempToken, code }),
-  });
-}
-
 // ===================== Attendance & Assessment =====================
 
 export async function attendanceMark(payload: { attendance_date: string; records: { student_id: number; status: string; remarks?: string }[] }): Promise<any> {

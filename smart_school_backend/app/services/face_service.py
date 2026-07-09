@@ -12,9 +12,9 @@ try:
     from deepface import DeepFace
 
     DEEPFACE_AVAILABLE = True
-except ImportError:
+except Exception:
     DEEPFACE_AVAILABLE = False
-    logger.warning("deepface/cv2 not installed — facial recognition disabled")
+    logger.warning("deepface/cv2 not available — facial recognition disabled")
 
 
 def _decode_image(data_url: str) -> Any:
