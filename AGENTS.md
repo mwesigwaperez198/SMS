@@ -36,3 +36,23 @@ Plan → Code → Debug → Produce (with best UI/UX)
 - **Backend:** https://sms-msku.onrender.com (FastAPI, Render)
 - **Admin Web:** https://sms-cms-brown.vercel.app (Vite + React, Vercel)
 - **Control Web:** https://novara-cms.pages.dev (Vite + React, Cloudflare Pages)
+
+## Session Log — 2026-07-09
+
+### Done (all pushed & deployed)
+- **35/35 unit tests passing** — fixed test isolation, Notification model fields, seed SQLite compat, migrations inspector pattern
+- **Fixes:** `platform_admin.py` — missing `AuditLog` import, AuditLogRead model fields mismatch (was 500); `students.py` — added `require_active_subscription` to list endpoint
+- **40/40 live E2E tests pass** (zero 500s) — tested against deployed backend at `sms-msku.onrender.com`
+  - Auth (login, refresh-token, role gates)
+  - Registration (`/registration/register-school`)
+  - School creation (`/platform/add-school`)
+  - All 7 role users created (teacher→ict_admin)
+  - API keys generate/revoke
+  - Subscription enforcement (expired schools blocked)
+  - System check trigger/list
+  - Audit logs, stats, users endpoints
+
+### Next session — build these in order
+1. **API key auth middleware** — so generated `novara_` keys can authenticate API requests
+2. **Facial recognition** endpoints (`/face-auth/*` currently returns 404)
+3. Headteacher role hierarchy (optional, after facial recognition)
