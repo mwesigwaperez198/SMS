@@ -1,4 +1,5 @@
 from app.db.base import Base
+from app.models.api_key import ApiKey
 from app.models.assessment import Assessment
 from app.models.attendance import Attendance
 from app.models.audit import AuditLog
@@ -12,9 +13,11 @@ from app.models.school import School
 from app.models.student import Student, StudentGuardian
 from app.models.subscription import ProductKey, SchoolSubscription, SubscriptionPlan
 from app.models.sync import SyncChange
+from app.models.system_check import SystemCheck
 from app.models.user import User
 
 __all__ = [
+    "ApiKey",
     "Assessment",
     "Attendance",
     "AuditLog",
@@ -38,5 +41,6 @@ __all__ = [
     "StudentGuardian",
     "SubscriptionPlan",
     "SyncChange",
+    "SystemCheck",
     "User",
 ]

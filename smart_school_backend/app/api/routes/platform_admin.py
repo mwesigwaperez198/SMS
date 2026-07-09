@@ -1,6 +1,8 @@
+import hashlib
+import secrets
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
 from sqlalchemy import func as sa_func
 from sqlalchemy.orm import Session, joinedload
@@ -8,12 +10,14 @@ from sqlalchemy.orm import Session, joinedload
 from app.api.deps import get_current_user, role_required
 from app.core.roles import RoleId
 from app.db.session import get_db
+from app.models.api_key import ApiKey
 from app.models.audit import AuditLog
 from app.models.notification import Notification
 from app.models.registration import RegistrationKey, RegistrationRequest
 from app.models.school import School
 from app.models.student import Student
 from app.models.subscription import ProductKey, SchoolSubscription, SubscriptionPlan
+from app.models.system_check import SystemCheck
 from app.models.user import User
 from app.schemas.subscription import (
     GenerateKeyRequest,
@@ -366,3 +370,393 @@ def list_platform_users(
         }
         for u in users
     ]
+
+
+# ─── API Key Endpoints ──────────────────────────────────────────
+
+
+class ApiKeyRead(BaseModel):
+    id: int
+    key_prefix: str
+    description: str | None
+    is_active: bool
+    last_used_at: datetime | None
+    expires_at: datetime | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class GenerateApiKeyRequest(BaseModel):
+    school_id: int
+    description: str | None = None
+    expires_in_days: int = 365
+
+
+class GenerateApiKeyResponse(BaseModel):
+    api_key: str
+    id: int
+    message: str
+
+
+@router.get("/api-keys", response_model=list[ApiKeyRead])
+def list_api_keys(
+    db: Session = Depends(get_db),
+    _user: User = Depends(role_required(RoleId.SUPER_ADMIN)),
+    school_id: int | None = Query(None),
+):
+    q = db.query(ApiKey)
+    if school_id:
+        q = q.filter(ApiKey.school_id == school_id)
+    return q.order_by(ApiKey.created_at.desc()).limit(100).all()
+
+
+def _send_api_key_email(recipient: str, api_key: str, school_name: str):
+    try:
+        from app.services.email_service import send_email
+
+        send_email(
+            to=recipient,
+            subject=f"Your NOVARA API Key for {school_name}",
+            html=f"""
+            <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;background:#0f172a;color:#f1f5f9;border-radius:12px;">
+                <h2 style="color:#667eea;">NOVARA API Key Generated</h2>
+                <p>An API key has been generated for <strong>{school_name}</strong>.</p>
+                <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:16px;margin:16px 0;font-family:monospace;font-size:1.1rem;text-align:center;color:#4fc3f7;">
+                    {api_key}
+                </div>
+                <p style="color:#94a3b8;font-size:0.85rem;">Use this key to authenticate API requests. Keep it secure and do not share it publicly.</p>
+                <p style="color:#94a3b8;font-size:0.85rem;">If you did not request this key, please contact NOVARA support immediately.</p>
+            </div>
+            """,
+        )
+    except Exception:
+        pass
+
+
+@router.post("/api-keys/generate", response_model=GenerateApiKeyResponse)
+def generate_api_key(
+    payload: GenerateApiKeyRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(role_required(RoleId.SUPER_ADMIN)),
+):
+    school = db.get(School, payload.school_id)
+    if not school:
+        raise HTTPException(status_code=404, detail="School not found")
+
+    raw_key = f"novara_{secrets.token_hex(24)}"
+    key_hash = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+    key_prefix = raw_key[:10]
+
+    from datetime import timedelta
+
+    api_key = ApiKey(
+        school_id=payload.school_id,
+        key_hash=key_hash,
+        key_prefix=key_prefix,
+        description=payload.description,
+        is_active=True,
+        expires_at=datetime.now(timezone.utc) + timedelta(days=payload.expires_in_days),
+        created_by_id=current_user.id,
+    )
+    db.add(api_key)
+    db.flush()
+
+    admin = db.query(User).filter(User.school_id == payload.school_id, User.role_id == RoleId.ADMIN).order_by(User.id).first()
+    if admin:
+        background_tasks.add_task(_send_api_key_email, admin.email, raw_key, school.name)
+
+    db.add(AuditLog(
+        action="api_key_generated",
+        actor_id=current_user.id,
+        actor_name=current_user.name,
+        entity=f"school:{payload.school_id}",
+        detail=f"API key generated for {school.name}",
+    ))
+    db.commit()
+
+    return GenerateApiKeyResponse(
+        api_key=raw_key,
+        id=api_key.id,
+        message=f"API key generated for {school.name}. Key sent to {admin.email if admin else '—'}.",
+    )
+
+
+@router.post("/api-keys/{key_id}/revoke", response_model=dict)
+def revoke_api_key(
+    key_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(role_required(RoleId.SUPER_ADMIN)),
+):
+    api_key = db.get(ApiKey, key_id)
+    if not api_key:
+        raise HTTPException(status_code=404, detail="API key not found")
+    api_key.is_active = False
+    db.add(AuditLog(
+        action="api_key_revoked",
+        actor_id=current_user.id,
+        actor_name=current_user.name,
+        entity=f"api_key:{key_id}",
+        detail=f"API key {api_key.key_prefix}... revoked",
+    ))
+    db.commit()
+    return {"detail": "API key revoked"}
+
+
+# ─── System Check Endpoints ────────────────────────────────────
+
+
+class SystemCheckRead(BaseModel):
+    id: int
+    triggered_by_name: str | None
+    status: str
+    scheduled_for: datetime
+    started_at: datetime | None
+    completed_at: datetime | None
+    summary: str | None
+    results: dict | None
+    error: str | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class TriggerSystemCheckResponse(BaseModel):
+    id: int
+    scheduled_for: datetime
+    message: str
+
+
+@router.post("/system-check/trigger", response_model=TriggerSystemCheckResponse)
+def trigger_system_check(
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(role_required(RoleId.SUPER_ADMIN)),
+):
+    now = datetime.now(timezone.utc)
+    tomorrow = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+
+    existing = db.query(SystemCheck).filter(
+        SystemCheck.status.in_(["scheduled", "running"]),
+        SystemCheck.scheduled_for > now,
+    ).first()
+    if existing:
+        raise HTTPException(
+            status_code=409,
+            detail=f"A system check is already scheduled for {existing.scheduled_for.strftime('%Y-%m-%d %H:%M UTC')}",
+        )
+
+    check = SystemCheck(
+        triggered_by_id=current_user.id,
+        status="scheduled",
+        scheduled_for=tomorrow,
+    )
+    db.add(check)
+    db.flush()
+
+    schools = db.query(School).filter(School.subscription_status.in_(["active", "trial"])).all()
+    notified = 0
+    for school in schools:
+        admins = db.query(User).filter(
+            User.school_id == school.id,
+            User.role_id.in_([RoleId.ADMIN, RoleId.ICT_ADMIN]),
+            User.is_active == True,
+        ).all()
+        for admin in admins:
+            try:
+                from app.services.email_service import send_email
+
+                send_email(
+                    to=admin.email,
+                    subject="System Maintenance Scheduled Tonight at Midnight",
+                    html=f"""
+                    <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;background:#0f172a;color:#f1f5f9;border-radius:12px;">
+                        <h2 style="color:#667eea;">Scheduled System Maintenance</h2>
+                        <p>A comprehensive system check has been scheduled.</p>
+                        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:16px;margin:16px 0;">
+                            <p><strong>Scheduled Time:</strong> Tonight at midnight ({tomorrow.strftime('%Y-%m-%d %H:%M UTC')})</p>
+                            <p><strong>School:</strong> {school.name}</p>
+                        </div>
+                        <p style="color:#f59e0b;font-weight:600;">During the maintenance window, the system will be temporarily unavailable.</p>
+                        <p style="color:#94a3b8;font-size:0.85rem;">All operations will resume automatically once the check completes. The estimated duration depends on the number of users and records in the system.</p>
+                    </div>
+                    """,
+                )
+                notified += 1
+            except Exception:
+                pass
+
+    from app.models.notification import Notification
+
+    for school in schools:
+        db.add(Notification(
+            school_id=school.id,
+            type="system_maintenance",
+            title="System Check Scheduled",
+            body=f"A system-wide check has been scheduled for tonight at midnight. The system will be briefly unavailable.",
+            severity="high",
+        ))
+
+    db.add(AuditLog(
+        action="system_check_triggered",
+        actor_id=current_user.id,
+        actor_name=current_user.name,
+        entity=f"system_check:{check.id}",
+        detail=f"System check scheduled for {tomorrow.strftime('%Y-%m-%d %H:%M UTC')}. {notified} administrators notified.",
+    ))
+    db.commit()
+
+    return TriggerSystemCheckResponse(
+        id=check.id,
+        scheduled_for=tomorrow,
+        message=f"System check scheduled for midnight ({tomorrow.strftime('%Y-%m-%d %H:%M UTC')}). {notified} administrators notified.",
+    )
+
+
+@router.get("/system-checks", response_model=list[SystemCheckRead])
+def list_system_checks(
+    db: Session = Depends(get_db),
+    _user: User = Depends(role_required(RoleId.SUPER_ADMIN)),
+    limit: int = Query(10, le=50),
+):
+    checks = db.query(SystemCheck).order_by(SystemCheck.created_at.desc()).limit(limit).all()
+    user_cache: dict[int, str] = {}
+    results = []
+    for c in checks:
+        if c.triggered_by_id not in user_cache:
+            u = db.get(User, c.triggered_by_id)
+            user_cache[c.triggered_by_id] = u.name if u else "Unknown"
+        results.append(SystemCheckRead(
+            id=c.id,
+            triggered_by_name=user_cache[c.triggered_by_id],
+            status=c.status,
+            scheduled_for=c.scheduled_for,
+            started_at=c.started_at,
+            completed_at=c.completed_at,
+            summary=c.summary,
+            results=c.results,
+            error=c.error,
+            created_at=c.created_at,
+        ))
+    return results
+
+
+# ─── Add School (Simple) ───────────────────────────────────────
+
+
+class AddSchoolRequest(BaseModel):
+    name: str
+    email: str
+    phone: str = ""
+    address: str = ""
+    country: str = "Uganda"
+    timezone: str = "Africa/Kampala"
+    admin_name: str
+    admin_email: str
+    admin_password: str = "changeme2026"
+    plan_id: int
+
+
+class AddSchoolResponse(BaseModel):
+    school_id: int
+    school_code: str
+    admin_user_id: int
+    message: str
+
+
+@router.post("/add-school", response_model=AddSchoolResponse)
+def add_school(
+    payload: AddSchoolRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(role_required(RoleId.SUPER_ADMIN)),
+):
+    from app.core.security import hash_password
+    from datetime import timedelta
+
+    existing_email = db.query(User).filter(User.email == payload.admin_email.lower()).first()
+    if existing_email:
+        raise HTTPException(status_code=409, detail="Admin email already in use")
+
+    import string
+
+    code_chars = string.ascii_uppercase + string.digits
+    school_code = "SCH" + "".join(secrets.choice(code_chars) for _ in range(6))
+
+    school = School(
+        name=payload.name,
+        school_code=school_code,
+        email=payload.email,
+        phone=payload.phone,
+        address=payload.address,
+        country=payload.country,
+        timezone=payload.timezone,
+        subscription_status="trial",
+    )
+    db.add(school)
+    db.flush()
+
+    admin_user = User(
+        name=payload.admin_name,
+        email=payload.admin_email.lower(),
+        phone=payload.phone,
+        password_hash=hash_password(payload.admin_password),
+        role_id=RoleId.ADMIN,
+        school_id=school.id,
+        is_active=True,
+        is_verified=True,
+    )
+    db.add(admin_user)
+    db.flush()
+
+    plan = db.get(SubscriptionPlan, payload.plan_id)
+    plan_days = plan.duration_days if plan else 30
+    now = datetime.now(timezone.utc)
+    sub = SchoolSubscription(
+        school_id=school.id,
+        plan_id=payload.plan_id,
+        status="trial",
+        starts_at=now,
+        expires_at=now + timedelta(days=plan_days),
+    )
+    db.add(sub)
+
+    db.add(AuditLog(
+        action="school_created",
+        actor_id=current_user.id,
+        actor_name=current_user.name,
+        entity=f"school:{school.id}",
+        detail=f"Created school {payload.name} with admin {payload.admin_email}",
+    ))
+    db.commit()
+
+    try:
+        from app.services.email_service import send_email
+
+        send_email(
+            to=payload.admin_email,
+            subject=f"Welcome to NOVARA — {payload.name}",
+            html=f"""
+            <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;background:#0f172a;color:#f1f5f9;border-radius:12px;">
+                <h2 style="color:#667eea;">Welcome to NOVARA School Management</h2>
+                <p>Your school <strong>{payload.name}</strong> has been registered.</p>
+                <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:16px;margin:16px 0;">
+                    <p><strong>School Code:</strong> {school_code}</p>
+                    <p><strong>Login Email:</strong> {payload.admin_email}</p>
+                    <p><strong>Default Password:</strong> {payload.admin_password}</p>
+                </div>
+                <p style="color:#f59e0b;">Please change your password on first login.</p>
+                <p style="color:#94a3b8;font-size:0.85rem;">Access the system at your school dashboard.</p>
+            </div>
+            """,
+        )
+    except Exception:
+        pass
+
+    return AddSchoolResponse(
+        school_id=school.id,
+        school_code=school_code,
+        admin_user_id=admin_user.id,
+        message=f"School {payload.name} created. Admin login sent to {payload.admin_email}",
+    )

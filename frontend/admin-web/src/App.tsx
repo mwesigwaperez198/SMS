@@ -382,7 +382,7 @@ function RoleWorkspace(props: WorkspaceProps) {
     case "student":
       return <StudentWorkspace view={props.view} data={props.data} />;
     default:
-      return <SuperAdminWorkspace view={props.view} data={props.data} />;
+      return <SuperAdminWorkspace view={props.view} data={props.data} onViewChange={props.onViewChange} />;
   }
 }
 

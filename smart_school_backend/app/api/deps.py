@@ -77,3 +77,37 @@ def require_school_context(current_user: User = Depends(get_current_user)) -> Us
             detail="School context is required for this operation",
         )
     return current_user
+
+
+def require_active_subscription(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
+    if current_user.role_id == 1:
+        return current_user
+    if current_user.school_id is None:
+        return current_user
+    from app.models.subscription import SchoolSubscription
+    from datetime import datetime, timezone
+    sub = (
+        db.query(SchoolSubscription)
+        .filter(
+            SchoolSubscription.school_id == current_user.school_id,
+            SchoolSubscription.status == "active",
+        )
+        .order_by(SchoolSubscription.id.desc())
+        .first()
+    )
+    if not sub:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your school subscription is inactive. Please renew to continue using the system.",
+        )
+    now = datetime.now(timezone.utc)
+    if sub.expires_at.replace(tzinfo=timezone.utc) < now:
+        school = db.get(__import__("app.models.school", fromlist=["School"]).School, current_user.school_id)
+        if school:
+            school.subscription_status = "expired"
+            db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your school subscription has expired. Please renew to continue using the system.",
+        )
+    return current_user

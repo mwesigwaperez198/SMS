@@ -56,7 +56,7 @@ export const roles: RoleProfile[] = [
     title: "Platform Control",
     accent: "#111827",
     icon: ShieldCheck,
-    nav: ["Dashboard", "Schools", "Audit Log", "System Alerts", "Support"]
+    nav: ["Dashboard", "Schools", "Audit Log", "System Alerts", "System Check", "Support"]
   },
   {
     key: "admin",

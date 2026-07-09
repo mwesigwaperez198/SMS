@@ -313,7 +313,7 @@ const DEFAULT_HOME: AdminHomeData = {
 };
 
 const ROLE_NAV: Record<RoleKey, string[]> = {
-  "super-admin": ["Dashboard", "Schools", "Registrations", "Keys", "Plans", "Audit Log", "Users", "System Alerts", "Support"],
+  "super-admin": ["Dashboard", "Schools", "Registrations", "Keys", "Plans", "Audit Log", "Users", "System Alerts", "System Check", "Support"],
   admin: ["Home", "Approvals", "Students", "Staff", "Finance", "Communication", "Reports", "Settings", "Notifications"],
   secretary: ["Register Student", "Student Profiles", "Import Students", "Guardians", "Documents"],
   bursar: ["Home", "Payments", "Receipts", "Cashbook", "Quotations", "Requisitions", "Reports", "Settings"],
@@ -792,4 +792,85 @@ export async function fetchPlatformAuditLogs(limit?: number): Promise<AuditLogIt
 
 export async function fetchPlatformUsers(): Promise<PlatformUserItem[]> {
   return apiRequest("/api/v1/platform/users");
+}
+
+// ─── API Key Endpoints ──────────────────────────────────────
+
+export interface ApiKeyItem {
+  id: number;
+  key_prefix: string;
+  description: string | null;
+  is_active: boolean;
+  last_used_at: string | null;
+  expires_at: string | null;
+  created_at: string;
+}
+
+export async function fetchApiKeys(schoolId?: number): Promise<ApiKeyItem[]> {
+  const qs = schoolId ? `?school_id=${schoolId}` : "";
+  return apiRequest(`/api/v1/platform/api-keys${qs}`);
+}
+
+export async function generateApiKey(schoolId: number, description?: string, expiresInDays?: number): Promise<{ api_key: string; id: number; message: string }> {
+  return apiRequest("/api/v1/platform/api-keys/generate", {
+    method: "POST",
+    body: JSON.stringify({ school_id: schoolId, description, expires_in_days: expiresInDays ?? 365 }),
+  });
+}
+
+export async function revokeApiKey(keyId: number): Promise<{ detail: string }> {
+  return apiRequest(`/api/v1/platform/api-keys/${keyId}/revoke`, { method: "POST" });
+}
+
+// ─── System Check Endpoints ─────────────────────────────────
+
+export interface SystemCheckItem {
+  id: number;
+  triggered_by_name: string | null;
+  status: string;
+  scheduled_for: string;
+  started_at: string | null;
+  completed_at: string | null;
+  summary: string | null;
+  results: Record<string, unknown> | null;
+  error: string | null;
+  created_at: string;
+}
+
+export async function triggerSystemCheck(): Promise<{ id: number; scheduled_for: string; message: string }> {
+  return apiRequest("/api/v1/platform/system-check/trigger", { method: "POST" });
+}
+
+export async function fetchSystemChecks(limit?: number): Promise<SystemCheckItem[]> {
+  const qs = limit ? `?limit=${limit}` : "";
+  return apiRequest(`/api/v1/platform/system-checks${qs}`);
+}
+
+// ─── Add School Endpoint ────────────────────────────────────
+
+export interface AddSchoolPayload {
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  country?: string;
+  timezone?: string;
+  admin_name: string;
+  admin_email: string;
+  admin_password?: string;
+  plan_id: number;
+}
+
+export interface AddSchoolResult {
+  school_id: number;
+  school_code: string;
+  admin_user_id: number;
+  message: string;
+}
+
+export async function addSchool(payload: AddSchoolPayload): Promise<AddSchoolResult> {
+  return apiRequest("/api/v1/platform/add-school", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }

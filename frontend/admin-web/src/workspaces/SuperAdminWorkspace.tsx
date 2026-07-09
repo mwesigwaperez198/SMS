@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { ShieldCheck, Server, AlertTriangle, CheckCircle, Clock, Activity, Settings, Ticket, Search, FileText, Key, CreditCard, Users, Eye, Ban, Check, X } from "lucide-react";
-import type { AuditLogItem, KeyItem, PlanItem, PlatformStats, RegistrationRequestItem, SchoolAdminItem, PlatformUserItem } from "../api";
+import { ShieldCheck, Server, AlertTriangle, CheckCircle, Clock, Activity, Settings, Ticket, Search, FileText, Key, CreditCard, Users, Eye, Ban, Check, X, Plus, RefreshCw, Trash2, Globe, Mail, Phone as PhoneIcon } from "lucide-react";
+import type { AuditLogItem, KeyItem, PlanItem, PlatformStats, RegistrationRequestItem, SchoolAdminItem, PlatformUserItem, ApiKeyItem, SystemCheckItem, AddSchoolPayload } from "../api";
 import { printElement, exportAsCSV } from "../utils/exportUtils";
 import {
   fetchPlatformStats, fetchPlatformSchools, toggleSchoolStatus,
@@ -8,15 +8,19 @@ import {
   fetchPlans, createPlan,
   fetchKeys, generateKey,
   fetchPlatformAuditLogs, fetchPlatformUsers,
+  fetchApiKeys, generateApiKey, revokeApiKey,
+  triggerSystemCheck, fetchSystemChecks,
+  addSchool,
 } from "../api";
 import type { ConnectedData } from "../api";
 
 interface SuperAdminWorkspaceProps {
   view: string;
   data: ConnectedData;
+  onViewChange?: (view: string) => void;
 }
 
-export function SuperAdminWorkspace({ view, data }: SuperAdminWorkspaceProps) {
+export function SuperAdminWorkspace({ view, data, onViewChange }: SuperAdminWorkspaceProps) {
   const [search, setSearch] = useState("");
 
   // Real data states
@@ -54,7 +58,7 @@ export function SuperAdminWorkspace({ view, data }: SuperAdminWorkspaceProps) {
       <div className="metric-grid">
         <div className="metric teal"><div className="metric-icon"><ShieldCheck size={22}/></div><div className="metric-body"><strong>{(s?.active_schools ?? data.systemSchools.filter(s => s.status === "Active").length)}</strong><span>Active Schools</span></div></div>
         <div className="metric green"><div className="metric-icon"><Activity size={22}/></div><div className="metric-body"><strong>{(s?.total_students ?? data.systemSchools.reduce((a, sc) => a + sc.students, 0)).toLocaleString()}</strong><span>Total Students</span></div></div>
-        <div className="metric red"><div className="metric-icon"><AlertTriangle size={22}/></div><div className="metric-body"><strong>{s?.pending_registrations ?? data.systemAlerts.filter(a => a.severity === "critical").length}</strong><span>Pending Registrations</span></div></div>
+        <div className="metric red" style={{cursor:"pointer"}} onClick={() => onViewChange?.("System Alerts")}><div className="metric-icon"><AlertTriangle size={22}/></div><div className="metric-body"><strong>{s?.pending_registrations ?? data.systemAlerts.filter(a => a.severity === "critical").length}</strong><span>System Alerts</span></div></div>
         <div className="metric blue"><div className="metric-icon"><Key size={22}/></div><div className="metric-body"><strong>{s?.keys_generated_30d ?? 0}</strong><span>Keys (30d)</span></div></div>
       </div>
     );
@@ -110,6 +114,30 @@ export function SuperAdminWorkspace({ view, data }: SuperAdminWorkspaceProps) {
 
   // ===================== Schools =====================
   if (view === "Schools") {
+    const [showAddSchool, setShowAddSchool] = useState(false);
+    const [addSchoolPayload, setAddSchoolPayload] = useState<Partial<AddSchoolPayload>>({});
+    const [addSchoolNotice, setAddSchoolNotice] = useState<string | null>(null);
+    const [addingSchool, setAddingSchool] = useState(false);
+
+    const handleAddSchool = async () => {
+      if (!addSchoolPayload.name || !addSchoolPayload.admin_email || !addSchoolPayload.admin_name || !addSchoolPayload.plan_id) {
+        setAddSchoolNotice("Please fill in all required fields");
+        return;
+      }
+      setAddingSchool(true);
+      try {
+        const result = await addSchool(addSchoolPayload as AddSchoolPayload);
+        setAddSchoolNotice(result.message);
+        setShowAddSchool(false);
+        setAddSchoolPayload({});
+        fetchPlatformSchools().then(setSchools);
+      } catch (e: any) {
+        setAddSchoolNotice(e.message);
+      } finally {
+        setAddingSchool(false);
+      }
+    };
+
     return (
       <div className="content-grid">
         <Metrics />
@@ -123,8 +151,33 @@ export function SuperAdminWorkspace({ view, data }: SuperAdminWorkspaceProps) {
               <option value="suspended">Suspended</option>
               <option value="expired">Expired</option>
             </select>
+            <button className="tool-button" onClick={() => setShowAddSchool(true)}><Plus size={15}/>Add School</button>
             <button className="tool-button" onClick={() => printElement("export-super-admin-schools")}><FileText size={15}/>Export</button>
           </div>
+
+          {showAddSchool && (
+            <div className="panel" style={{padding:20,marginBottom:16,display:"grid",gap:14}}>
+              <div className="panel-title"><strong>Add New School</strong></div>
+              {addSchoolNotice && <div className="notice">{addSchoolNotice}</div>}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:12}}>
+                <label className="form-label">School Name * <input value={addSchoolPayload.name ?? ""} onChange={e => setAddSchoolPayload(p => ({...p,name:e.target.value}))} placeholder="e.g. Kampala High School" /></label>
+                <label className="form-label">School Email * <input value={addSchoolPayload.email ?? ""} onChange={e => setAddSchoolPayload(p => ({...p,email:e.target.value}))} placeholder="info@school.com" /></label>
+                <label className="form-label">School Phone <input value={addSchoolPayload.phone ?? ""} onChange={e => setAddSchoolPayload(p => ({...p,phone:e.target.value}))} placeholder="+256 700 000000" /></label>
+                <label className="form-label">Address <input value={addSchoolPayload.address ?? ""} onChange={e => setAddSchoolPayload(p => ({...p,address:e.target.value}))} placeholder="Kampala, Uganda" /></label>
+                <label className="form-label">Admin Name * <input value={addSchoolPayload.admin_name ?? ""} onChange={e => setAddSchoolPayload(p => ({...p,admin_name:e.target.value}))} placeholder="Headteacher name" /></label>
+                <label className="form-label">Admin Email * <input value={addSchoolPayload.admin_email ?? ""} onChange={e => setAddSchoolPayload(p => ({...p,admin_email:e.target.value}))} placeholder="admin@school.com" /></label>
+                <label className="form-label">Admin Password <input value={addSchoolPayload.admin_password ?? ""} onChange={e => setAddSchoolPayload(p => ({...p,admin_password:e.target.value}))} placeholder="Default: changeme2026" /></label>
+                <label className="form-label">Plan * <select value={addSchoolPayload.plan_id ?? ""} onChange={e => setAddSchoolPayload(p => ({...p,plan_id:Number(e.target.value)}))}>
+                  <option value="">Select plan</option>
+                  {plans.map(p => <option key={p.id} value={p.id}>{p.name} - UGX {p.price.toLocaleString()} ({p.duration_days}d)</option>)}
+                </select></label>
+              </div>
+              <div style={{display:"flex",gap:8}}>
+                <button className="tool-button primary" disabled={addingSchool} onClick={handleAddSchool}>{addingSchool ? "Creating..." : "Create School"}</button>
+                <button className="tool-button" onClick={() => { setShowAddSchool(false); setAddSchoolNotice(null); }}>Cancel</button>
+              </div>
+            </div>
+          )}
           <div id="export-super-admin-schools" className="table-wrap">
             <table>
               <thead><tr><th>Code</th><th>School Name</th><th>Contact</th><th>Students</th><th>Users</th><th>Status</th><th>Since</th><th>Actions</th></tr></thead>
@@ -235,6 +288,12 @@ export function SuperAdminWorkspace({ view, data }: SuperAdminWorkspaceProps) {
     const [selectedPlan, setSelectedPlan] = useState("");
     const [keyNotice, setKeyNotice] = useState<string | null>(null);
     const [keyFilter, setKeyFilter] = useState<string>("");
+    const [keyTab, setKeyTab] = useState<"product" | "api">("product");
+    const [apiKeys, setApiKeys] = useState<ApiKeyItem[]>([]);
+    const [showApiGenerate, setShowApiGenerate] = useState(false);
+    const [apiSelectedSchool, setApiSelectedSchool] = useState("");
+    const [apiKeyDesc, setApiKeyDesc] = useState("");
+    const [isGenerating, setIsGenerating] = useState(false);
 
     const filteredKeys = keys.filter(k => {
       if (keyFilter === "used") return k.is_used;
@@ -254,55 +313,144 @@ export function SuperAdminWorkspace({ view, data }: SuperAdminWorkspaceProps) {
       }
     };
 
+    const loadApiKeys = async () => {
+      try { setApiKeys(await fetchApiKeys()); } catch { setApiKeys([]); }
+    };
+
+    const handleApiGenerate = async () => {
+      if (!apiSelectedSchool) return;
+      setIsGenerating(true);
+      try {
+        const result = await generateApiKey(Number(apiSelectedSchool), apiKeyDesc || undefined);
+        setKeyNotice(result.message);
+        setShowApiGenerate(false);
+        setApiKeyDesc("");
+        loadApiKeys();
+      } catch (e: any) {
+        setKeyNotice(e.message);
+      } finally {
+        setIsGenerating(false);
+      }
+    };
+
+    const handleRevoke = async (id: number) => {
+      try {
+        await revokeApiKey(id);
+        setKeyNotice("API key revoked");
+        loadApiKeys();
+      } catch (e: any) {
+        setKeyNotice(e.message);
+      }
+    };
+
+    useEffect(() => { if (view === "Keys") loadApiKeys(); }, [view]);
+
     return (
       <div className="content-grid">
         <div className="table-panel">
           <div className="office-filters">
-            <select value={keyFilter} onChange={e => setKeyFilter(e.target.value)} style={{padding:"4px 8px",borderRadius:4,background:"var(--surface)",color:"var(--text)",border:"1px solid var(--border)"}}>
-              <option value="">All Keys</option>
-              <option value="unused">Unused</option>
-              <option value="used">Used</option>
-            </select>
-            <button className="tool-button primary" onClick={() => setShowGenerate(!showGenerate)}><Key size={15}/>Generate Key</button>
+            <div style={{display:"flex",gap:4}}>
+              <button className={`tool-button ${keyTab === "product" ? "primary" : ""}`} onClick={() => setKeyTab("product")}>Product Keys</button>
+              <button className={`tool-button ${keyTab === "api" ? "primary" : ""}`} onClick={() => { setKeyTab("api"); loadApiKeys(); }}>API Keys</button>
+            </div>
           </div>
           {keyNotice && <div className="notice">{keyNotice}</div>}
 
-          {showGenerate && (
-            <div className="panel" style={{padding:16,marginBottom:16,display:"grid",gap:12}}>
-              <strong>Generate New Key</strong>
-              <select value={selectedSchool} onChange={e => setSelectedSchool(e.target.value)} style={{padding:"6px 10px",borderRadius:4,background:"var(--surface)",color:"var(--text)",border:"1px solid var(--border)"}}>
-                <option value="">Select school</option>
-                {schools.map(s => <option key={s.id} value={s.id}>{s.name} ({s.school_code})</option>)}
-              </select>
-              <select value={selectedPlan} onChange={e => setSelectedPlan(e.target.value)} style={{padding:"6px 10px",borderRadius:4,background:"var(--surface)",color:"var(--text)",border:"1px solid var(--border)"}}>
-                <option value="">Select plan</option>
-                {plans.map(p => <option key={p.id} value={p.id}>{p.name} - UGX {p.price.toLocaleString()} ({p.duration_days}d)</option>)}
-              </select>
-              <div style={{display:"flex",gap:8}}>
-                <button className="primary-button" disabled={!selectedSchool || !selectedPlan} onClick={handleGenerate}>Generate</button>
-                <button className="secondary-button" onClick={() => setShowGenerate(false)}>Cancel</button>
+          {keyTab === "product" && (
+            <>
+              <div className="office-filters">
+                <select value={keyFilter} onChange={e => setKeyFilter(e.target.value)} style={{padding:"4px 8px",borderRadius:4,background:"var(--surface)",color:"var(--text)",border:"1px solid var(--border)"}}>
+                  <option value="">All Keys</option>
+                  <option value="unused">Unused</option>
+                  <option value="used">Used</option>
+                </select>
+                <button className="tool-button primary" onClick={() => setShowGenerate(!showGenerate)}><Key size={15}/>Generate Key</button>
               </div>
-            </div>
+
+              {showGenerate && (
+                <div className="panel" style={{padding:16,marginBottom:16,display:"grid",gap:12}}>
+                  <strong>Generate New Product Key</strong>
+                  <select value={selectedSchool} onChange={e => setSelectedSchool(e.target.value)} style={{padding:"6px 10px",borderRadius:4,background:"var(--surface)",color:"var(--text)",border:"1px solid var(--border)"}}>
+                    <option value="">Select school</option>
+                    {schools.map(s => <option key={s.id} value={s.id}>{s.name} ({s.school_code})</option>)}
+                  </select>
+                  <select value={selectedPlan} onChange={e => setSelectedPlan(e.target.value)} style={{padding:"6px 10px",borderRadius:4,background:"var(--surface)",color:"var(--text)",border:"1px solid var(--border)"}}>
+                    <option value="">Select plan</option>
+                    {plans.map(p => <option key={p.id} value={p.id}>{p.name} - UGX {p.price.toLocaleString()} ({p.duration_days}d)</option>)}
+                  </select>
+                  <div style={{display:"flex",gap:8}}>
+                    <button className="primary-button" disabled={!selectedSchool || !selectedPlan} onClick={handleGenerate}>Generate</button>
+                    <button className="secondary-button" onClick={() => setShowGenerate(false)}>Cancel</button>
+                  </div>
+                </div>
+              )}
+
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>ID</th><th>School</th><th>Plan</th><th>Used</th><th>Expires</th><th>Created</th></tr></thead>
+                  <tbody>
+                    {filteredKeys.map(k => (
+                      <tr key={k.id}>
+                        <td><code style={{fontSize:"0.75rem"}}>#{k.id}</code></td>
+                        <td>{k.school_name ?? "—"}</td>
+                        <td>{k.plan_name ?? "—"}</td>
+                        <td><span className={`badge ${k.is_used ? "muted" : "success"}`}>{k.is_used ? "Used" : "Active"}</span></td>
+                        <td style={{fontSize:"0.82rem"}}>{new Date(k.expires_at).toLocaleDateString()}</td>
+                        <td style={{fontSize:"0.82rem"}}>{new Date(k.created_at).toLocaleDateString()}</td>
+                      </tr>
+                    ))}
+                    {filteredKeys.length === 0 && <tr><td colSpan={6} className="empty-state">No keys found</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
 
-          <div className="table-wrap">
-            <table>
-              <thead><tr><th>ID</th><th>School</th><th>Plan</th><th>Used</th><th>Expires</th><th>Created</th></tr></thead>
-              <tbody>
-                {filteredKeys.map(k => (
-                  <tr key={k.id}>
-                    <td><code style={{fontSize:"0.75rem"}}>#{k.id}</code></td>
-                    <td>{k.school_name ?? "—"}</td>
-                    <td>{k.plan_name ?? "—"}</td>
-                    <td><span className={`badge ${k.is_used ? "muted" : "success"}`}>{k.is_used ? "Used" : "Active"}</span></td>
-                    <td style={{fontSize:"0.82rem"}}>{new Date(k.expires_at).toLocaleDateString()}</td>
-                    <td style={{fontSize:"0.82rem"}}>{new Date(k.created_at).toLocaleDateString()}</td>
-                  </tr>
-                ))}
-                {filteredKeys.length === 0 && <tr><td colSpan={6} className="empty-state">No keys found</td></tr>}
-              </tbody>
-            </table>
-          </div>
+          {keyTab === "api" && (
+            <>
+              <div className="office-filters">
+                <button className="tool-button primary" onClick={() => setShowApiGenerate(!showApiGenerate)}><Key size={15}/>Generate API Key</button>
+              </div>
+
+              {showApiGenerate && (
+                <div className="panel" style={{padding:16,marginBottom:16,display:"grid",gap:12}}>
+                  <strong>Generate New API Key</strong>
+                  <select value={apiSelectedSchool} onChange={e => setApiSelectedSchool(e.target.value)} style={{padding:"6px 10px",borderRadius:4,background:"var(--surface)",color:"var(--text)",border:"1px solid var(--border)"}}>
+                    <option value="">Select school</option>
+                    {schools.map(s => <option key={s.id} value={s.id}>{s.name} ({s.school_code})</option>)}
+                  </select>
+                  <input placeholder="Description (optional)" value={apiKeyDesc} onChange={e => setApiKeyDesc(e.target.value)} style={{padding:"6px 10px",borderRadius:4,background:"var(--surface)",color:"var(--text)",border:"1px solid var(--border)"}} />
+                  <div style={{display:"flex",gap:8}}>
+                    <button className="primary-button" disabled={!apiSelectedSchool || isGenerating} onClick={handleApiGenerate}>{isGenerating ? "Generating..." : "Generate"}</button>
+                    <button className="secondary-button" onClick={() => setShowApiGenerate(false)}>Cancel</button>
+                  </div>
+                </div>
+              )}
+
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>ID</th><th>Prefix</th><th>Description</th><th>Status</th><th>Last Used</th><th>Expires</th><th>Created</th><th>Actions</th></tr></thead>
+                  <tbody>
+                    {apiKeys.map(k => (
+                      <tr key={k.id}>
+                        <td><code style={{fontSize:"0.75rem"}}>#{k.id}</code></td>
+                        <td><code>{k.key_prefix}...</code></td>
+                        <td style={{fontSize:"0.85rem"}}>{k.description ?? "—"}</td>
+                        <td><span className={`badge ${k.is_active ? "success" : "muted"}`}>{k.is_active ? "Active" : "Revoked"}</span></td>
+                        <td style={{fontSize:"0.82rem"}}>{k.last_used_at ? new Date(k.last_used_at).toLocaleDateString() : "Never"}</td>
+                        <td style={{fontSize:"0.82rem"}}>{k.expires_at ? new Date(k.expires_at).toLocaleDateString() : "Never"}</td>
+                        <td style={{fontSize:"0.82rem"}}>{new Date(k.created_at).toLocaleDateString()}</td>
+                        <td>
+                          {k.is_active && <button className="tool-button" style={{color:"var(--danger)"}} onClick={() => handleRevoke(k.id)} title="Revoke"><Trash2 size={14}/></button>}
+                        </td>
+                      </tr>
+                    ))}
+                    {apiKeys.length === 0 && <tr><td colSpan={8} className="empty-state">No API keys generated</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
@@ -473,6 +621,70 @@ export function SuperAdminWorkspace({ view, data }: SuperAdminWorkspaceProps) {
     );
   }
 
+  // ===================== System Check =====================
+  if (view === "System Check") {
+    const [scHistory, setScHistory] = useState<SystemCheckItem[]>([]);
+    const [scNotice, setScNotice] = useState<string | null>(null);
+    const [scTriggering, setScTriggering] = useState(false);
+
+    const loadScHistory = () => fetchSystemChecks(10).then(setScHistory).catch(() => {});
+
+    const handleTriggerSc = async () => {
+      setScTriggering(true);
+      try {
+        const result = await triggerSystemCheck();
+        setScNotice(result.message);
+        loadScHistory();
+      } catch (e: any) {
+        setScNotice(e.message);
+      } finally {
+        setScTriggering(false);
+      }
+    };
+
+    useEffect(() => { if (view === "System Check") loadScHistory(); }, [view]);
+
+    return (
+      <div className="content-grid">
+        <Metrics />
+        <div className="panel" style={{padding:20,display:"grid",gap:16,marginBottom:16}}>
+          <div className="panel-title"><ShieldCheck size={20} style={{color:"var(--primary)"}}/><strong>System Check</strong></div>
+          <p style={{fontSize:"0.85rem",color:"var(--muted)",margin:0}}>Trigger a comprehensive system-wide check. The check will run at midnight and notify all school administrators. During maintenance, the system will be temporarily unavailable.</p>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <button className="tool-button primary" disabled={scTriggering} onClick={handleTriggerSc}>
+              {scTriggering ? "Scheduling..." : <><RefreshCw size={15}/> Run System Check</>}
+            </button>
+            <span style={{fontSize:"0.8rem",color:"var(--info)"}}>Runs automatically at midnight</span>
+          </div>
+          {scNotice && <div className="notice">{scNotice}</div>}
+        </div>
+
+        <div className="table-panel">
+          <div className="panel-title" style={{padding:"12px 16px"}}><strong>Check History</strong></div>
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>ID</th><th>Triggered By</th><th>Status</th><th>Scheduled</th><th>Started</th><th>Completed</th><th>Summary</th></tr></thead>
+              <tbody>
+                {scHistory.map(c => (
+                  <tr key={c.id}>
+                    <td><code style={{fontSize:"0.75rem"}}>#{c.id}</code></td>
+                    <td>{c.triggered_by_name ?? "—"}</td>
+                    <td><span className={`badge ${c.status === "completed" ? "success" : c.status === "running" ? "info" : c.status === "failed" ? "error" : "warning"}`}>{c.status}</span></td>
+                    <td style={{fontSize:"0.82rem"}}>{new Date(c.scheduled_for).toLocaleString()}</td>
+                    <td style={{fontSize:"0.82rem"}}>{c.started_at ? new Date(c.started_at).toLocaleString() : "—"}</td>
+                    <td style={{fontSize:"0.82rem"}}>{c.completed_at ? new Date(c.completed_at).toLocaleString() : "—"}</td>
+                    <td style={{fontSize:"0.82rem"}}>{c.summary ?? c.error ?? "—"}</td>
+                  </tr>
+                ))}
+                {scHistory.length === 0 && <tr><td colSpan={7} className="empty-state">No system checks yet</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ===================== Support =====================
   if (view === "Support") {
     return (
@@ -501,7 +713,7 @@ export function SuperAdminWorkspace({ view, data }: SuperAdminWorkspaceProps) {
   return (
     <div className="content-grid">
       <Metrics />
-      <div className="notice-strip">Select a view — Dashboard, Schools, Registrations, Keys, Plans, Audit Log, Users, System Alerts, or Support.</div>
+      <div className="notice-strip">Select a view — Dashboard, Schools, Registrations, Keys, Plans, Audit Log, Users, System Alerts, System Check, or Support.</div>
     </div>
   );
 }
