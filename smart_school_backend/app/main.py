@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
 
 from app.api.router import api_router
 from app.core.config import get_settings
@@ -25,7 +26,7 @@ async def lifespan(app: FastAPI):
     from app.db.base import Base
     from app.db.seed import seed_foundation
     from app.core.config import get_settings
-    from sqlalchemy import create_engine, text
+    from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
     try:
