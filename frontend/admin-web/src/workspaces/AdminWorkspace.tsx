@@ -2,7 +2,7 @@ import { useState } from "react";
 import { UserRoundCog, Users, Download, FileText, Database, User, GraduationCap, Search, MessageSquare, Bell, CheckCircle, XCircle, RotateCcw, Send, Phone, Mail, ArrowRight, ShieldCheck, TrendingUp, BarChart3, PieChart, Activity, AlertTriangle, Eye, Printer, RefreshCw } from "lucide-react";
 import type { ConnectedData } from "../api";
 import { sendSmsBatch, sendRoleNotification } from "../api";
-import { printElement, exportAsCSV } from "../utils/exportUtils";
+import { printElement, downloadElement, exportAsCSV } from "../utils/exportUtils";
 
 interface AdminWorkspaceProps {
   view: string;
@@ -304,7 +304,7 @@ export function AdminWorkspace({ view, data, onViewChange }: AdminWorkspaceProps
           </div>
           <div style={{display:"flex",gap:10,padding:"0 16px 16px"}}>
             <button className="tool-button primary" onClick={() => printElement("export-admin-report", "Admin Report")}><Printer size={15}/>Generate Full Report</button>
-            <button className="tool-button"><Download size={15}/>Export PDF</button>
+            <button className="tool-button" onClick={() => downloadElement("export-admin-report", "admin-report.html")}><Download size={15}/>Export PDF</button>
             <button className="tool-button"><Database size={15}/>Export Data</button>
           </div>
         </div>

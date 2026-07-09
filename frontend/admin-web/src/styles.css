@@ -1131,11 +1131,7 @@ tbody tr:hover {
   transition: all 0.2s ease;
 }
 
-@media (max-width: 1100px) {
-  .app-shell-modern {
-    grid-template-columns: 1fr;
-  }
-
+@media (max-width: 900px) {
   .sidebar-modern {
     position: fixed;
     top: 0;
@@ -1167,12 +1163,7 @@ tbody tr:hover {
     display: inline-flex;
   }
 
-  .nav-modern {
-    grid-template-columns: 1fr;
-  }
-
-  .workspace-grid,
-  .teacher-board {
+  .app-shell-modern {
     grid-template-columns: 1fr;
   }
 
@@ -1183,6 +1174,16 @@ tbody tr:hover {
   .mobile-search {
     display: flex !important;
     margin: 0 0 12px;
+  }
+}
+
+/* ─── Desktop layout reinforcement ──────────────────────── */
+@media (min-width: 901px) {
+  .sidebar-overlay { display: none !important; }
+  .main-wrapper { padding-bottom: 0 !important; }
+  .sidebar-modern {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
   }
 }
 
@@ -1904,7 +1905,7 @@ tbody tr:hover {
   margin-top: 4px;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 900px) {
   .third-panel,
   .half-panel {
     grid-column: 1 / -1;
@@ -2921,6 +2922,83 @@ textarea.field-input {
   border: 1px solid rgba(255,255,255,0.1); border-radius: 16px;
   background: rgba(30,41,59,0.95); backdrop-filter: blur(20px);
   padding: 28px; box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+}
+
+/* ─── Bottom tab bar for mobile ────────────────────────── */
+.mobile-bottom-tabs {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-tabs {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding: 4px 8px;
+    padding-bottom: max(4px, env(safe-area-inset-bottom, 4px));
+    justify-content: space-around;
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.3);
+  }
+
+  .main-wrapper {
+    padding-bottom: 60px;
+  }
+
+  .footer-modern {
+    padding-bottom: calc(14px + env(safe-area-inset-bottom, 14px));
+  }
+}
+
+.bottom-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 44px;
+  min-width: 48px;
+  flex: 1;
+  max-width: 96px;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.bottom-tab.active {
+  color: var(--primary);
+  background: rgba(102, 126, 234, 0.12);
+  font-weight: 700;
+}
+
+.bottom-tab:active {
+  transform: scale(0.92);
+  background: rgba(102, 126, 234, 0.2);
+}
+
+.bottom-tab-label {
+  font-size: 0.65rem;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 @media (max-width:640px) {

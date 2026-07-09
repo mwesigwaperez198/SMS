@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Receipt, FileText, Bell, Calendar, Download, User } from "lucide-react";
 import type { ConnectedData } from "../api";
-import { printElement } from "../utils/exportUtils";
+import { downloadElement } from "../utils/exportUtils";
 
 interface ParentWorkspaceProps {
   view: string;
@@ -181,7 +181,7 @@ export function ParentWorkspace({ view, data }: ParentWorkspaceProps) {
             <p style={{ margin: "4px 0 0", opacity: 0.85, fontSize: "0.88rem" }}>{child.class} · Term 1, 2026</p>
             <p style={{ margin: "4px 0 0", opacity: 0.85, fontSize: "0.88rem" }}>Position: {child.position} · Average: {child.average}</p>
           </div>
-          <button className="tool-button" style={{ marginLeft: "auto", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff" }} onClick={() => printElement("export-child-report", "Report - " + child.name)}>
+          <button className="tool-button" style={{ marginLeft: "auto", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff" }} onClick={() => downloadElement("export-child-report", child.name.replace(/\s+/g, "-") + "-report-card.html")}>
             <Download size={15} />Download
           </button>
         </div>

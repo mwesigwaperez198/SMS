@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { GraduationCap, BookOpen, LibraryBig, Camera, Download, ExternalLink, Calendar, FileText, Bell } from "lucide-react";
 import type { ConnectedData } from "../api";
-import { printElement } from "../utils/exportUtils";
+import { downloadElement } from "../utils/exportUtils";
 
 interface StudentWorkspaceProps {
   view: string;
@@ -376,7 +376,7 @@ export function StudentWorkspace({ view, data }: StudentWorkspaceProps) {
             <strong style={{ fontSize: "1.1rem" }}>{student.name}</strong>
             <p style={{ margin: "4px 0 0", opacity: 0.85, fontSize: "0.88rem" }}>{student.class} {student.stream} · Term 1, 2026</p>
           </div>
-          <button className="tool-button" style={{ marginLeft: "auto", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff" }} onClick={() => printElement("export-report-card", "Report Card - " + student.name)}>
+          <button className="tool-button" style={{ marginLeft: "auto", background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", color: "#fff" }} onClick={() => downloadElement("export-report-card", student.name.replace(/\s+/g, "-") + "-report-card.html")}>
             <Download size={15} />Download
           </button>
         </div>

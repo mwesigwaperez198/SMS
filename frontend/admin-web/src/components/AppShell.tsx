@@ -171,6 +171,19 @@ export function AppShell({
           </div>
           <a className="footer-powered" href="https://novara-tech-africa.kesug.com" target="_blank" rel="noopener noreferrer">Powered by Novara</a>
         </footer>
+
+        <nav className="mobile-bottom-tabs">
+          {visibleNav.map((item) => (
+            <button
+              key={item}
+              type="button"
+              className={`bottom-tab ${activeView === item ? "active" : ""}`}
+              onClick={() => { onViewChange?.(item); setSidebarOpen(false); }}
+            >
+              <span className="bottom-tab-label">{item}</span>
+            </button>
+          ))}
+        </nav>
       </div>
     </div>
   );
