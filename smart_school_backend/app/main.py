@@ -54,6 +54,9 @@ async def lifespan(app: FastAPI):
 def _run_migrations(db):
     migrations = [
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo VARCHAR(500)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS face_descriptor VARCHAR(2000)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_secret VARCHAR(32)",
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_2fa_enabled BOOLEAN NOT NULL DEFAULT false",
         "ALTER TABLE registration_requests ADD COLUMN IF NOT EXISTS plan_id INTEGER",
     ]
     for stmt in migrations:
