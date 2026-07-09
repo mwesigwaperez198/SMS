@@ -109,10 +109,10 @@ class KeyRead(BaseModel):
 class AuditLogRead(BaseModel):
     id: int
     action: str
-    actor_name: str | None
-    entity: str | None
-    detail: str | None
-    ip_address: str | None
+    actor_name: str | None = None
+    entity_type: str | None = None
+    entity_id: int | None = None
+    ip_address: str | None = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -325,7 +325,25 @@ def list_audit_logs(
     _user: User = Depends(role_required(RoleId.SUPER_ADMIN)),
     limit: int = Query(50, le=200),
 ) -> list[AuditLogRead]:
-    return db.query(AuditLog).order_by(AuditLog.created_at.desc()).limit(limit).all()
+    logs = (
+        db.query(AuditLog)
+        .options(joinedload(AuditLog.actor))
+        .order_by(AuditLog.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        AuditLogRead(
+            id=log.id,
+            action=log.action,
+            actor_name=log.actor.name if log.actor else None,
+            entity_type=log.entity_type,
+            entity_id=log.entity_id,
+            ip_address=log.ip_address,
+            created_at=log.created_at,
+        )
+        for log in logs
+    ]
 
 
 @router.get("/users", response_model=list[dict])
