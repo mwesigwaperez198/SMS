@@ -546,6 +546,7 @@ export async function registerSchool(payload: {
   admin_email: string;
   admin_phone: string;
   address?: string;
+  plan_id?: number | null;
   payment_method: "mobile_money" | "bank_account";
   payment_details: string;
 }): Promise<{ id: number; message: string }> {
@@ -672,6 +673,7 @@ export interface RegistrationRequestItem {
   admin_name: string;
   admin_email: string;
   admin_phone: string;
+  plan_id: number | null;
   payment_method: string;
   payment_details: string;
   status: string;

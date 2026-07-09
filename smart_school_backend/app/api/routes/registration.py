@@ -20,6 +20,7 @@ class RegisterSchoolRequest(BaseModel):
     admin_email: EmailStr
     admin_phone: str = Field(min_length=8, max_length=30)
     address: str | None = None
+    plan_id: int | None = None
     payment_method: str = Field(pattern=r"^(mobile_money|bank_account)$")
     payment_details: str = Field(min_length=5)
 
@@ -63,6 +64,7 @@ def register_school(
         admin_email=str(payload.admin_email).lower(),
         admin_phone=payload.admin_phone,
         address=payload.address,
+        plan_id=payload.plan_id,
         payment_method=payload.payment_method,
         payment_details=payload.payment_details,
     )

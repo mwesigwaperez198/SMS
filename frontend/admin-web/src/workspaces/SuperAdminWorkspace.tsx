@@ -166,6 +166,12 @@ export function SuperAdminWorkspace({ view, data }: SuperAdminWorkspaceProps) {
 
     const filtered = registrations.filter(r => !regFilter || r.status === regFilter);
 
+    const planName = (pid: number | null) => {
+      if (!pid) return "—";
+      const p = plans.find(p => p.id === pid);
+      return p ? p.name : `Plan #${pid}`;
+    };
+
     const handleApprove = async (id: number) => {
       setApproving(id);
       try {
@@ -194,14 +200,13 @@ export function SuperAdminWorkspace({ view, data }: SuperAdminWorkspaceProps) {
           {regNotice && <div className="notice">{regNotice}</div>}
           <div className="table-wrap">
             <table>
-              <thead><tr><th>School</th><th>Admin</th><th>Email</th><th>Phone</th><th>Payment</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+              <thead><tr><th>School</th><th>Admin</th><th>Plan</th><th>Payment</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
               <tbody>
                 {filtered.map(r => (
                   <tr key={r.id}>
                     <td><strong>{r.school_name}</strong></td>
                     <td>{r.admin_name}</td>
-                    <td>{r.admin_email}</td>
-                    <td>{r.admin_phone}</td>
+                    <td style={{fontSize:"0.82rem"}}>{planName(r.plan_id)}</td>
                     <td style={{fontSize:"0.82rem"}}>{r.payment_method}</td>
                     <td><span className={`badge ${r.status==="approved" ? "success" : r.status==="pending" ? "warning" : "error"}`}>{r.status}</span></td>
                     <td style={{fontSize:"0.82rem"}}>{new Date(r.created_at).toLocaleDateString()}</td>
@@ -214,7 +219,7 @@ export function SuperAdminWorkspace({ view, data }: SuperAdminWorkspaceProps) {
                     </td>
                   </tr>
                 ))}
-                {filtered.length === 0 && <tr><td colSpan={8} className="empty-state">No registrations</td></tr>}
+                {filtered.length === 0 && <tr><td colSpan={7} className="empty-state">No registrations</td></tr>}
               </tbody>
             </table>
           </div>

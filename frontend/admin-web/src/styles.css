@@ -1572,15 +1572,15 @@ tbody tr:hover {
 .nav-item:hover,
 .quick-action:hover,
 .doc-actions button:hover {
-  border-color: var(--border);
-  background: #ffffff;
+  border-color: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
 }
 
 .nav-item.active,
 .nav-item.active:hover {
-  border-color: #bfdbfe;
-  background: #eff6ff;
-  color: #1e3a8a;
+  border-color: rgba(102,126,234,0.4);
+  background: rgba(102,126,234,0.12);
+  color: #a5b4fc;
   font-weight: 800;
 }
 
@@ -2504,15 +2504,16 @@ tbody tr:hover {
   border-radius: 8px;
   padding: 10px 12px;
   font: inherit;
-  background: #fff;
+  background: rgba(255,255,255,0.05);
+  color: #f1f5f9;
   min-width: 160px;
 }
 
 .library-ncdc-note {
-  border: 1px solid #bfdbfe;
+  border: 1px solid rgba(79,195,247,0.3);
   border-radius: 8px;
-  background: #eff6ff;
-  color: #1e3a8a;
+  background: rgba(79,195,247,0.1);
+  color: #7dd3fc;
   font-size: 0.88rem;
   padding: 10px 14px;
   margin-bottom: 16px;
@@ -2529,14 +2530,14 @@ tbody tr:hover {
   gap: 12px;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: #fff;
+  background: rgba(30, 41, 59, 0.5);
   padding: 14px;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .library-book-card:hover {
-  border-color: #bfdbfe;
-  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.06);
+  border-color: rgba(102,126,234,0.3);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .library-book-cover {

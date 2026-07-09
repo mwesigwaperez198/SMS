@@ -76,6 +76,7 @@ class RegistrationRequestRead(BaseModel):
     admin_name: str
     admin_email: str
     admin_phone: str
+    plan_id: int | None = None
     payment_method: str
     payment_details: str
     status: str

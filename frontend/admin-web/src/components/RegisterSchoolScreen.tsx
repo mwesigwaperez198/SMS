@@ -1,6 +1,7 @@
-import { useState } from "react";
-import { Building2, ArrowLeft, Smartphone, Landmark } from "lucide-react";
-import { registerSchool } from "../api";
+import { useEffect, useState } from "react";
+import { Building2, ArrowLeft, Smartphone, Landmark, CreditCard, Check } from "lucide-react";
+import { registerSchool, fetchPlans } from "../api";
+import type { PlanItem } from "../api";
 
 interface RegisterSchoolScreenProps {
   onBack: () => void;
@@ -13,22 +14,33 @@ export function RegisterSchoolScreen({ onBack }: RegisterSchoolScreenProps) {
     admin_email: "",
     admin_phone: "",
     address: "",
+    plan_id: null as number | null,
     payment_method: "mobile_money" as "mobile_money" | "bank_account",
     payment_details: "",
   });
+  const [plans, setPlans] = useState<PlanItem[]>([]);
+  const [plansLoading, setPlansLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchPlans()
+      .then(setPlans)
+      .catch(() => {})
+      .finally(() => setPlansLoading(false));
+  }, []);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
     setForm(p => ({ ...p, [k]: e.target.value }));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.plan_id) { setError("Please select a subscription plan"); return; }
     setSubmitting(true);
     setError(null);
     try {
-      const res = await registerSchool(form);
+      const res = await registerSchool({ ...form, plan_id: form.plan_id });
       setResult(res.message);
     } catch (err: any) {
       setError(err.message);
@@ -109,6 +121,78 @@ export function RegisterSchoolScreen({ onBack }: RegisterSchoolScreenProps) {
               <span className="field-label">School Address</span>
               <textarea value={form.address} onChange={set("address")} placeholder="P.O. Box, district, location" className="field-input" rows={2} />
             </label>
+          </div>
+
+          <div className="login-card-title" style={{marginTop:16}}>
+            <CreditCard size={22} />
+            <div>
+              <p>Choose your plan</p>
+              <h2>Subscription Plan</h2>
+            </div>
+          </div>
+
+          {plansLoading ? (
+            <div style={{textAlign:"center",padding:20,color:"var(--muted)"}}>
+              <span className="spinner" /> Loading plans...
+            </div>
+          ) : (
+            <div style={{display:"grid",gap:10,marginTop:8}}>
+              {plans.map(plan => {
+                const selected = form.plan_id === plan.id;
+                return (
+                  <button
+                    type="button"
+                    key={plan.id}
+                    onClick={() => setForm(p => ({ ...p, plan_id: plan.id }))}
+                    style={{
+                      display:"grid",
+                      gridTemplateColumns:"auto 1fr auto",
+                      gap:14,
+                      alignItems:"center",
+                      padding:"14px 16px",
+                      border: `2px solid ${selected ? "rgba(102,126,234,0.6)" : "rgba(255,255,255,0.08)"}`,
+                      borderRadius:12,
+                      background: selected ? "rgba(102,126,234,0.1)" : "rgba(30,41,59,0.5)",
+                      color:"#f1f5f9",
+                      cursor:"pointer",
+                      textAlign:"left",
+                      transition:"all 0.2s",
+                    }}
+                  >
+                    <div style={{
+                      width:22,height:22,borderRadius:"50%",
+                      border: `2px solid ${selected ? "#667eea" : "rgba(255,255,255,0.2)"}`,
+                      display:"grid",placeItems:"center",
+                      background: selected ? "#667eea" : "transparent",
+                    }}>
+                      {selected && <Check size={14} style={{color:"#fff"}} />}
+                    </div>
+                    <div>
+                      <strong style={{fontSize:"0.95rem"}}>{plan.name}</strong>
+                      <div style={{display:"flex",gap:12,fontSize:"0.8rem",color:"var(--muted)",marginTop:2}}>
+                        <span>UGX {plan.price.toLocaleString()}</span>
+                        <span>{plan.duration_days}d</span>
+                        {plan.max_students && <span>Up to {plan.max_students} students</span>}
+                      </div>
+                    </div>
+                    <div style={{fontSize:"0.9rem",fontWeight:700,color:"#a5b4fc"}}>
+                      UGX {plan.price.toLocaleString()}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="login-card-title" style={{marginTop:16}}>
+            <Smartphone size={22} />
+            <div>
+              <p>Payment details</p>
+              <h2>Payment Method</h2>
+            </div>
+          </div>
+
+          <div className="login-form-fields">
             <label className="form-field">
               <span className="field-label">Payment Method *</span>
               <select value={form.payment_method} onChange={set("payment_method")} className="field-input">
@@ -127,7 +211,7 @@ export function RegisterSchoolScreen({ onBack }: RegisterSchoolScreenProps) {
                   className="field-input" required />
               </div>
               <small style={{color:"var(--muted)",fontSize:"0.78rem",marginTop:4,display:"block"}}>
-                Your payment info will be sent to the Novara team for verification. You'll receive a quotation within 48 hours.
+                Your payment info will be sent to the Novara team for verification along with your plan selection.
               </small>
             </label>
           </div>
@@ -137,7 +221,7 @@ export function RegisterSchoolScreen({ onBack }: RegisterSchoolScreenProps) {
             <button type="button" className="secondary-button" onClick={onBack}>
               <ArrowLeft size={16}/> Back
             </button>
-            <button type="submit" className="primary-button gradient-button" disabled={submitting}>
+            <button type="submit" className="primary-button gradient-button" disabled={submitting || !form.plan_id}>
               {submitting ? <span className="button-with-spinner"><span className="spinner" /> Submitting...</span> : "Submit Registration"}
             </button>
           </div>

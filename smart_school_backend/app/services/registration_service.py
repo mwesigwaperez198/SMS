@@ -21,6 +21,7 @@ def create_registration_request(
     admin_email: str,
     admin_phone: str,
     address: str | None,
+    plan_id: int | None,
     payment_method: str,
     payment_details: str,
 ) -> RegistrationRequest:
@@ -40,6 +41,7 @@ def create_registration_request(
         admin_email=admin_email,
         admin_phone=admin_phone,
         address=address,
+        plan_id=plan_id,
         payment_method=payment_method,
         payment_details=payment_details,
         status="pending",

@@ -15,6 +15,7 @@ class RegistrationRequest(Base):
     admin_email: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     admin_phone: Mapped[str] = mapped_column(String(30), nullable=False)
     address: Mapped[str | None] = mapped_column(Text)
+    plan_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
     payment_method: Mapped[str] = mapped_column(String(20), nullable=False)
     payment_details: Mapped[str] = mapped_column(Text, nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="pending")
