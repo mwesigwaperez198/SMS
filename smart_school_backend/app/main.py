@@ -8,6 +8,7 @@ from sqlalchemy import text
 
 from app.api.router import api_router
 from app.core.config import get_settings
+from app.db.session import engine as _engine
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ except ImportError:
 async def lifespan(app: FastAPI):
     from app.db.base import Base
     from app.db.seed import seed_foundation
-    from app.db.session import engine as _engine, SessionMaker
+    from app.db.session import SessionMaker
 
     try:
         import app.models  # noqa: F401

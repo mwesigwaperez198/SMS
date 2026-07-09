@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { Sidebar } from "./components/Sidebar";
 import { Header } from "./components/Header";
@@ -30,6 +30,12 @@ function AppContent() {
   const [view, setView] = useState("dashboard");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [selectedSchoolId, setSelectedSchoolId] = useState<number | null>(null);
+  const [theme, setTheme] = useState(() => localStorage.getItem("novara_theme") || "dark");
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("light", theme === "light");
+    localStorage.setItem("novara_theme", theme);
+  }, [theme]);
 
   if (!admin) return <LoginPage />;
 
@@ -49,7 +55,7 @@ function AppContent() {
     : (viewTitles[view] || "NOVARA Control");
 
   return (
-    <div className="min-h-screen bg-zinc-950 flex">
+    <div className="min-h-screen flex" style={{ background: "var(--bg-app)" }}>
       <Sidebar
         activeView={view}
         onNavigate={handleNavigate}
@@ -58,10 +64,12 @@ function AppContent() {
         onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
       />
 
-      <div className="flex-1 flex flex-col min-w-0 lg:ml-16">
+      <div className="flex-1 flex flex-col min-w-0">
         <Header
           title={title}
           onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
+          theme={theme}
+          onToggleTheme={() => setTheme(t => t === "dark" ? "light" : "dark")}
         />
 
         <main className="flex-1 overflow-y-auto">

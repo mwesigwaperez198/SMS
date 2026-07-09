@@ -4,6 +4,23 @@
 
 :root {
   --novara: #6366f1;
+  --bg-app: #09090b;
+  --bg-surface: #18181b;
+  --bg-header: rgba(24, 24, 27, 0.5);
+  --border: #27272a;
+  --text: #fafafa;
+  --text-muted: #a1a1aa;
+  --text-dim: #71717a;
+}
+
+.light {
+  --bg-app: #fafafa;
+  --bg-surface: #ffffff;
+  --bg-header: rgba(255, 255, 255, 0.8);
+  --border: #e4e4e7;
+  --text: #18181b;
+  --text-muted: #52525b;
+  --text-dim: #71717a;
 }
 
 body {
@@ -12,6 +29,6 @@ body {
 }
 
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #18181b; }
+::-webkit-scrollbar-track { background: var(--bg-surface); }
 ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #52525b; }
