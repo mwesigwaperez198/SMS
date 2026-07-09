@@ -25,7 +25,7 @@ async def lifespan(app: FastAPI):
     from app.db.base import Base
     from app.db.seed import seed_foundation
     from app.core.config import get_settings
-    from sqlalchemy import create_engine
+    from sqlalchemy import create_engine, text
     from sqlalchemy.orm import sessionmaker
 
     try:
@@ -38,6 +38,7 @@ async def lifespan(app: FastAPI):
         Base.metadata.create_all(bind=engine)
         db = sessionmaker(bind=engine, autoflush=False, autocommit=False)()
         try:
+            _run_migrations(db)
             seed_foundation(db)
         except Exception as e:
             logger.error("Seed failed (non-fatal): %s", e)
@@ -47,6 +48,19 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning("Database unavailable at startup (running in stateless mode): %s", e)
     yield
+
+
+def _run_migrations(db):
+    migrations = [
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS profile_photo VARCHAR(500)",
+    ]
+    for stmt in migrations:
+        try:
+            db.execute(text(stmt))
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.warning("Migration skipped (%s): %s", stmt[:60], e)
 
 
 def create_app() -> FastAPI:
