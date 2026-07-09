@@ -31,23 +31,27 @@ def seed_initial_super_admin(db: Session) -> None:
     if not settings.initial_super_admin_email or not settings.initial_super_admin_password:
         return
 
-    existing_user = (
-        db.query(User)
-        .filter(User.email == settings.initial_super_admin_email.lower())
-        .first()
-    )
-    if existing_user:
+    from sqlalchemy import text
+
+    existing = db.execute(
+        text("SELECT id FROM users WHERE email = :email"),
+        {"email": settings.initial_super_admin_email.lower()},
+    ).scalar()
+    if existing:
         return
 
-    db.add(
-        User(
-            name=settings.initial_super_admin_name,
-            email=settings.initial_super_admin_email.lower(),
-            password_hash=hash_password(settings.initial_super_admin_password),
-            role_id=RoleId.SUPER_ADMIN,
-            school_id=None,
-            is_verified=True,
-        )
+    hashed = hash_password(settings.initial_super_admin_password)
+    db.execute(
+        text("""
+            INSERT INTO users (name, email, password_hash, role_id, is_verified, created_at, updated_at)
+            VALUES (:name, :email, :pwd, :rid, true, NOW(), NOW())
+        """),
+        {
+            "name": settings.initial_super_admin_name,
+            "email": settings.initial_super_admin_email.lower(),
+            "pwd": hashed,
+            "rid": RoleId.SUPER_ADMIN,
+        },
     )
     db.commit()
 
