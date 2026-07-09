@@ -11,6 +11,7 @@ from app.api.deps import get_current_user, role_required
 from app.core.roles import RoleId
 from app.db.session import get_db
 from app.models.api_key import ApiKey
+from app.models.audit import AuditLog
 from app.models.notification import Notification
 from app.models.registration import RegistrationKey, RegistrationRequest
 from app.models.school import School
