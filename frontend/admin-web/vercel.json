@@ -4,6 +4,12 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "env": {
-    "VITE_API_URL": "https://sms-msku.onrender.com"
-  }
+    "VITE_API_URL": ""
+  },
+  "rewrites": [
+    {
+      "source": "/api/v1/:path*",
+      "destination": "https://sms-msku.onrender.com/api/v1/:path*"
+    }
+  ]
 }
