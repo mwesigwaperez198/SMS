@@ -31,6 +31,13 @@ def create_user(db: Session, payload: UserCreate, current_user: User) -> User:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="School admins cannot create platform or admin users",
             )
+        if current_user.role_id == RoleId.HEADTEACHER and payload.role_id not in (
+            RoleId.TEACHER,
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Headteacher can only create teacher accounts",
+            )
         school_id = current_user.school_id
 
     validate_password_strength(payload.password)

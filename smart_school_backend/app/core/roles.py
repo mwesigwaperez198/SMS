@@ -11,6 +11,7 @@ class RoleId(IntEnum):
     SECRETARY = 7
     LIBRARIAN = 8
     ICT_ADMIN = 9
+    HEADTEACHER = 10
 
 
 ROLE_SEED_DATA = (
@@ -58,5 +59,10 @@ ROLE_SEED_DATA = (
         "id": RoleId.ICT_ADMIN,
         "name": "ict_admin",
         "description": "School ICT administrator who manages system maintenance and technical operations.",
+    },
+    {
+        "id": RoleId.HEADTEACHER,
+        "name": "headteacher",
+        "description": "Head teacher who oversees academic staff, approves leave, and monitors school-wide performance.",
     },
 )

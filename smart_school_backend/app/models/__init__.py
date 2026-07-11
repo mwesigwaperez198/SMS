@@ -5,6 +5,7 @@ from app.models.attendance import Attendance
 from app.models.audit import AuditLog
 from app.models.fees import FeeCategory, Invoice, Payment, Receipt
 from app.models.library import LibraryBook, LibraryBorrow, LibraryRequest
+from app.models.leave import LeaveRequest
 from app.models.notification import Notification
 from app.models.registration import RegistrationKey, RegistrationRequest
 from app.models.report_card import ReportCard
@@ -24,6 +25,7 @@ __all__ = [
     "Base",
     "FeeCategory",
     "Invoice",
+    "LeaveRequest",
     "LibraryBook",
     "LibraryBorrow",
     "LibraryRequest",

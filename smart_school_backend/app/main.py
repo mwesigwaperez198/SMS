@@ -59,11 +59,17 @@ def _run_migrations(db):
             logger.warning("Migration profile_photo: %s", e)
     if "face_descriptor" not in existing_cols:
         try:
-            db.execute(text("ALTER TABLE users ADD COLUMN face_descriptor VARCHAR(2000)"))
+            db.execute(text("ALTER TABLE users ADD COLUMN face_descriptor VARCHAR(5000)"))
             db.commit()
         except Exception as e:
             db.rollback()
             logger.warning("Migration face_descriptor: %s", e)
+    else:
+        try:
+            db.execute(text("ALTER TABLE users ALTER COLUMN face_descriptor TYPE VARCHAR(5000)"))
+            db.commit()
+        except Exception:
+            db.rollback()
     if "totp_secret" not in existing_cols:
         try:
             db.execute(text("ALTER TABLE users ADD COLUMN totp_secret VARCHAR(32)"))

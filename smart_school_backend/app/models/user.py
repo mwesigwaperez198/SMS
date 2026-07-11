@@ -33,7 +33,7 @@ class User(Base):
     reset_code_expires: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     # Photo / profile
     profile_photo: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    face_descriptor: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    face_descriptor: Mapped[str | None] = mapped_column(String(5000), nullable=True)
     # 2FA fields
     totp_secret: Mapped[str | None] = mapped_column(String(32), nullable=True)
     is_2fa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

@@ -1,11 +1,14 @@
+import hashlib
 from collections.abc import Callable
+from datetime import datetime, timezone
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core.security import decode_access_token
 from app.db.session import get_db
+from app.models.api_key import ApiKey
 from app.models.school import School
 from app.models.user import User
 
@@ -112,3 +115,54 @@ def require_active_subscription(current_user: User = Depends(get_current_user), 
             detail="Your school subscription has expired. Please renew to continue using the system.",
         )
     return current_user
+
+
+def verify_api_key(
+    x_api_key: str | None = Header(default=None, alias="X-API-Key"),
+    db: Session = Depends(get_db),
+) -> School:
+    """
+    Authenticate via X-API-Key header (novara_... keys).
+    Returns the School the key belongs to.
+    """
+    if not x_api_key:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing X-API-Key header",
+        )
+    if not x_api_key.startswith("novara_"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key format",
+        )
+
+    key_hash = hashlib.sha256(x_api_key.encode("utf-8")).hexdigest()
+    api_key = db.query(ApiKey).filter(ApiKey.key_hash == key_hash).first()
+
+    if not api_key or not api_key.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or revoked API key",
+        )
+
+    now = datetime.now(timezone.utc)
+    if api_key.expires_at and api_key.expires_at.replace(tzinfo=timezone.utc) < now:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key has expired",
+        )
+
+    # Update last used timestamp (fire-and-forget style — no hard fail)
+    try:
+        api_key.last_used_at = now
+        db.commit()
+    except Exception:
+        db.rollback()
+
+    school = db.get(School, api_key.school_id)
+    if not school:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="School associated with this API key not found",
+        )
+    return school

@@ -2,12 +2,14 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     admin,
+    api_key_auth,
     assessments,
     attendance,
     auth,
     face_auth,
     fees,
     finance,
+    headteacher,
     library,
     notifications,
     novara_admin,
@@ -35,8 +37,10 @@ api_router.include_router(attendance.router)
 api_router.include_router(report_cards.router)
 api_router.include_router(notifications.router)
 api_router.include_router(admin.router)
+api_router.include_router(headteacher.router)
 api_router.include_router(sync.router)
 api_router.include_router(library.router)
 api_router.include_router(subscriptions.router)
 api_router.include_router(platform_admin.router)
 api_router.include_router(novara_admin.router)
+api_router.include_router(api_key_auth.router)

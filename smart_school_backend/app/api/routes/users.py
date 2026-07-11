@@ -15,6 +15,6 @@ router = APIRouter(prefix="/users", tags=["users"])
 def create_school_user(
     payload: UserCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(role_required(RoleId.SUPER_ADMIN, RoleId.ADMIN)),
+    current_user: User = Depends(role_required(RoleId.SUPER_ADMIN, RoleId.ADMIN, RoleId.HEADTEACHER)),
 ) -> User:
     return create_user(db, payload, current_user)
