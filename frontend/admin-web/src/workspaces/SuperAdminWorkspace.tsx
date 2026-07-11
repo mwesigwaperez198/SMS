@@ -542,8 +542,8 @@ export function SuperAdminWorkspace({ view, data, onViewChange }: SuperAdminWork
                     <td><code style={{fontSize:"0.75rem"}}>{l.id}</code></td>
                     <td><strong style={{fontSize:"0.85rem"}}>{l.action}</strong></td>
                     <td>{l.actor_name ?? "—"}</td>
-                    <td><code style={{fontSize:"0.75rem"}}>{l.entity ?? "—"}</code></td>
-                    <td style={{fontSize:"0.82rem"}}>{l.detail ?? "—"}</td>
+                    <td><code style={{fontSize:"0.75rem"}}>{l.entity_type ?? l.entity ?? "—"}</code></td>
+                    <td style={{fontSize:"0.82rem"}}>{l.entity_id ? `#${l.entity_id}` : (l.detail ?? "—")}</td>
                     <td style={{fontSize:"0.82rem"}}>{new Date(l.created_at).toLocaleString()}</td>
                   </tr>
                 ))}

@@ -3,6 +3,7 @@ import type { LucideIcon } from "lucide-react";
 export type RoleKey =
   | "super-admin"
   | "admin"
+  | "headteacher"
   | "secretary"
   | "bursar"
   | "librarian"

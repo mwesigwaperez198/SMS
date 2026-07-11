@@ -12,7 +12,6 @@ from app.api.routes import (
     headteacher,
     library,
     notifications,
-    novara_admin,
     platform,
     platform_admin,
     registration,
@@ -42,5 +41,4 @@ api_router.include_router(sync.router)
 api_router.include_router(library.router)
 api_router.include_router(subscriptions.router)
 api_router.include_router(platform_admin.router)
-api_router.include_router(novara_admin.router)
 api_router.include_router(api_key_auth.router)

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { UserRoundCog, Users, Download, FileText, Database, User, GraduationCap, Search, MessageSquare, Bell, CheckCircle, XCircle, RotateCcw, Send, Phone, Mail, ArrowRight, ShieldCheck, TrendingUp, BarChart3, PieChart, Activity, AlertTriangle, Eye, Printer, RefreshCw } from "lucide-react";
 import type { ConnectedData } from "../api";
-import { sendSmsBatch, sendRoleNotification } from "../api";
+import { sendSmsBatch, sendRoleNotification, resetPassword } from "../api";
 import { printElement, downloadElement, exportAsCSV } from "../utils/exportUtils";
 
 interface AdminWorkspaceProps {
@@ -32,6 +32,27 @@ export function AdminWorkspace({ view, data, onViewChange }: AdminWorkspaceProps
   const [notifMsg, setNotifMsg] = useState("");
   const [notifRole, setNotifRole] = useState(4);
   const [notifSent, setNotifSent] = useState("");
+
+  const [pwdCurrent, setPwdCurrent] = useState("");
+  const [pwdNew, setPwdNew] = useState("");
+  const [pwdConfirm, setPwdConfirm] = useState("");
+  const [pwdMsg, setPwdMsg] = useState("");
+  const [pwdSaving, setPwdSaving] = useState(false);
+
+  const handlePasswordChange = async () => {
+    if (!pwdCurrent || !pwdNew || !pwdConfirm) { setPwdMsg("All fields required"); return; }
+    if (pwdNew !== pwdConfirm) { setPwdMsg("New passwords do not match"); return; }
+    setPwdSaving(true);
+    try {
+      const msg = await resetPassword(pwdCurrent, pwdNew);
+      setPwdMsg(msg);
+      setPwdCurrent(""); setPwdNew(""); setPwdConfirm("");
+    } catch (e: any) {
+      setPwdMsg(e.message);
+    } finally {
+      setPwdSaving(false);
+    }
+  };
 
   const filteredStudents = data.students.filter(s =>
     !search || s.name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -431,10 +452,11 @@ export function AdminWorkspace({ view, data, onViewChange }: AdminWorkspaceProps
         <div className="detail-panel" style={{padding:16}}>
           <p className="eyebrow" style={{marginBottom:12}}>Change Password</p>
           <div className="office-form">
-            <label>Current Password<input type="password" placeholder="••••••••" /></label>
-            <label>New Password<input type="password" placeholder="Min 8 chars, 1 uppercase, 1 digit" /></label>
-            <label>Confirm Password<input type="password" placeholder="Repeat new password" /></label>
-            <button className="tool-button primary"><RotateCcw size={15}/>Update Password</button>
+            <label>Current Password<input type="password" value={pwdCurrent} onChange={e => setPwdCurrent(e.target.value)} placeholder="••••••••" /></label>
+            <label>New Password<input type="password" value={pwdNew} onChange={e => setPwdNew(e.target.value)} placeholder="Min 8 chars, 1 uppercase, 1 digit" /></label>
+            <label>Confirm Password<input type="password" value={pwdConfirm} onChange={e => setPwdConfirm(e.target.value)} placeholder="Repeat new password" /></label>
+            {pwdMsg && <span className={`notice-strip ${pwdMsg.includes("Error") || pwdMsg.includes("match") || pwdMsg.includes("required") ? "" : "success"}`} style={{fontSize:"0.82rem"}}>{pwdMsg}</span>}
+            <button className="tool-button primary" disabled={pwdSaving} onClick={handlePasswordChange}><RotateCcw size={15}/>{pwdSaving ? "Saving..." : "Update Password"}</button>
           </div>
         </div>
       </div>

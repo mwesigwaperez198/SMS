@@ -133,13 +133,13 @@ export interface Session {
 
 export const roleMap: Record<number, RoleKey> = {
   1: "super-admin", 2: "admin", 3: "teacher",
-  4: "parent", 5: "student", 6: "bursar", 7: "secretary", 8: "librarian", 9: "ict-admin"
+  4: "parent", 5: "student", 6: "bursar", 7: "secretary", 8: "librarian", 9: "ict-admin", 10: "headteacher"
 };
 
 export const roleLabels: Record<RoleKey, string> = {
   "super-admin": "Super Admin", admin: "Admin", teacher: "Teacher",
   parent: "Parent", student: "Student", bursar: "Bursar",
-  secretary: "Secretary", librarian: "Librarian", "ict-admin": "ICT Admin"
+  secretary: "Secretary", librarian: "Librarian", "ict-admin": "ICT Admin", headteacher: "Head Teacher"
 };
 
 export function mapUserToSession(result: { access_token: string; refresh_token: string; user: { id: number; name: string; email: string; role_id: number; school_id: number | null; school?: { name: string } | null } }): Session {
@@ -315,6 +315,7 @@ const DEFAULT_HOME: AdminHomeData = {
 const ROLE_NAV: Record<RoleKey, string[]> = {
   "super-admin": ["Dashboard", "Schools", "Registrations", "Keys", "Plans", "Audit Log", "Users", "System Alerts", "System Check", "Support"],
   admin: ["Home", "Approvals", "Students", "Staff", "Finance", "Communication", "Reports", "Settings", "Notifications"],
+  headteacher: ["Dashboard", "Staff", "Attendance", "Performance", "Leave Requests", "Messages"],
   secretary: ["Register Student", "Student Profiles", "Import Students", "Guardians", "Documents"],
   bursar: ["Home", "Payments", "Receipts", "Cashbook", "Quotations", "Requisitions", "Reports", "Settings"],
   librarian: ["Catalog", "Issue & Return", "Book Requests", "Upload to Students", "Reports"],
@@ -384,7 +385,8 @@ async function fetchConnectedData(role: RoleKey): Promise<ConnectedData> {
     actor: l.actor_name ?? "",
     role: String(l.actor_role_id ?? ""),
     school: "",
-    entity: l.entity_type ?? "",
+    entity: l.entity_type ?? l.entity ?? "",
+    detail: l.entity_id ? `#${l.entity_id}` : (l.detail ?? ""),
     timestamp: l.created_at ?? "",
     severity: "info"
   }));
@@ -707,6 +709,7 @@ export interface AuditLogItem {
   action: string;
   actor_name: string | null;
   entity: string | null;
+  entity_id: number | null;
   detail: string | null;
   ip_address: string | null;
   created_at: string;
