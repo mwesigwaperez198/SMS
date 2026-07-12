@@ -19,7 +19,7 @@ export function SchoolsListPage({ onSelectSchool }: SchoolsListPageProps) {
   const [selectedReg, setSelectedReg] = useState<any>(null);
   const [approvingId, setApprovingId] = useState<number | null>(null);
   const [rejectingId, setRejectingId] = useState<number | null>(null);
-  const [keyModal, setKeyModal] = useState<{ key: string; schoolName: string; email: string; emailSent: boolean } | null>(null);
+  const [keyModal, setKeyModal] = useState<{ key: string; schoolName: string; email: string; emailSent: boolean; tempPassword?: string; apiKey?: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
   const filtered = (schools ?? []).filter((s) => {
@@ -44,7 +44,7 @@ export function SchoolsListPage({ onSelectSchool }: SchoolsListPageProps) {
     setApprovingId(id);
     try {
       const res = await approveRegistration(id);
-      setKeyModal({ key: res.product_key, schoolName, email, emailSent: res.email_sent });
+      setKeyModal({ key: res.product_key, schoolName, email, emailSent: res.email_sent, tempPassword: res.temp_password, apiKey: res.api_key });
       refreshRegs();
       refresh();
     } catch (e: any) {
@@ -409,7 +409,7 @@ export function SchoolsListPage({ onSelectSchool }: SchoolsListPageProps) {
             <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
               <div className="flex items-center gap-2">
                 <CheckCircle2 size={18} className="text-emerald-400" />
-                <h3 className="text-sm font-medium">Registration Approved</h3>
+                <h3 className="text-sm font-medium">School Provisioned</h3>
               </div>
               <button onClick={() => setKeyModal(null)} className="p-1 rounded-lg text-zinc-500 hover:text-zinc-300">
                 <X size={18} />
@@ -423,15 +423,39 @@ export function SchoolsListPage({ onSelectSchool }: SchoolsListPageProps) {
 
               <div className={`rounded-lg p-3 text-xs ${keyModal.emailSent ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"}`}>
                 {keyModal.emailSent
-                  ? `Key emailed to ${keyModal.email}`
-                  : `Email failed — copy and send the key manually to ${keyModal.email}`}
+                  ? `Credentials emailed to ${keyModal.email}`
+                  : `Email failed — copy and send credentials manually to ${keyModal.email}`}
               </div>
+
+              {keyModal.tempPassword && (
+                <div>
+                  <div className="text-xs text-zinc-500 mb-1.5">Admin Password</div>
+                  <div className="flex items-center gap-2 bg-zinc-800 rounded-lg p-3">
+                    <code className="text-sm text-zinc-200 font-mono break-all flex-1">{keyModal.tempPassword}</code>
+                    <button onClick={() => { navigator.clipboard.writeText(keyModal.tempPassword!); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="p-1 rounded text-zinc-500 hover:text-zinc-300 shrink-0">
+                      {copied ? <CheckCircle2 size={16} className="text-emerald-400" /> : <Copy size={16} />}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {keyModal.apiKey && (
+                <div>
+                  <div className="text-xs text-zinc-500 mb-1.5">API Key</div>
+                  <div className="flex items-center gap-2 bg-zinc-800 rounded-lg p-3">
+                    <code className="text-xs text-zinc-300 font-mono break-all flex-1">{keyModal.apiKey}</code>
+                    <button onClick={() => { navigator.clipboard.writeText(keyModal.apiKey!); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="p-1 rounded text-zinc-500 hover:text-zinc-300 shrink-0">
+                      {copied ? <CheckCircle2 size={16} className="text-emerald-400" /> : <Copy size={16} />}
+                    </button>
+                  </div>
+                </div>
+              )}
 
               <div>
                 <div className="text-xs text-zinc-500 mb-1.5">Registration Key</div>
                 <div className="flex items-center gap-2 bg-zinc-800 rounded-lg p-3">
                   <code className="text-sm text-zinc-200 font-mono break-all flex-1">{keyModal.key}</code>
-                  <button onClick={copyKey} className="p-1 rounded text-zinc-500 hover:text-zinc-300 shrink-0">
+                  <button onClick={() => { navigator.clipboard.writeText(keyModal.key); setCopied(true); setTimeout(() => setCopied(false), 2000); }} className="p-1 rounded text-zinc-500 hover:text-zinc-300 shrink-0">
                     {copied ? <CheckCircle2 size={16} className="text-emerald-400" /> : <Copy size={16} />}
                   </button>
                 </div>

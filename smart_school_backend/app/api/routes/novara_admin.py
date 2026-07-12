@@ -33,7 +33,7 @@ class SchoolCreateRequest(BaseModel):
     address: str = ""
     country: str = "Uganda"
     timezone: str = "Africa/Kampala"
-    plan_id: int
+    plan_id: int | None = None
     admin_email: str
     admin_name: str
     send_email: bool = True
@@ -230,6 +230,13 @@ def create_school(
     ).scalar()
     if existing:
         raise HTTPException(status_code=400, detail="School with this email already exists")
+
+    existing_user = db.execute(
+        text("SELECT id FROM users WHERE email = :email"),
+        {"email": payload.admin_email},
+    ).scalar()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="A user with this admin email already exists")
 
     school_code = payload.name[:3].upper() + secrets_mod.token_hex(2).upper()
 
@@ -753,11 +760,12 @@ def approve_registration(
     current_user: User = Depends(get_current_user),
 ):
     _check_novara(current_user)
-    from app.services.registration_service import generate_registration_key
     from sqlalchemy import text
+    import secrets as secrets_mod
+    import hashlib
 
     req = db.execute(
-        text("SELECT id, status, admin_email FROM registration_requests WHERE id = :id"),
+        text("SELECT id, status, school_name, admin_name, admin_email, admin_phone, plan_id, payment_method, payment_details FROM registration_requests WHERE id = :id"),
         {"id": request_id},
     ).one_or_none()
     if not req:
@@ -765,15 +773,144 @@ def approve_registration(
     if req[1] != "pending":
         raise HTTPException(status_code=400, detail="Registration already processed")
 
-    reg_key = generate_registration_key(db, request_id)
+    school_name = req[2]
+    admin_name = req[3]
+    admin_email = req[4]
+    admin_phone = req[5]
+    plan_id = req[6]
+
+    existing_user = db.execute(
+        text("SELECT id FROM users WHERE email = :email"),
+        {"email": admin_email},
+    ).scalar()
+    if existing_user:
+        raise HTTPException(status_code=400, detail=f"User with email {admin_email} already exists. Cannot approve — the user may need to login instead.")
+
+    existing_school = db.execute(
+        text("SELECT id FROM schools WHERE name = :name"),
+        {"name": school_name},
+    ).scalar()
+    if existing_school:
+        raise HTTPException(status_code=400, detail=f"School '{school_name}' already exists.")
+
+    school_code = school_name[:3].upper() + secrets_mod.token_hex(2).upper()
+
+    result = db.execute(
+        text("""
+            INSERT INTO schools (name, school_code, email, phone, address, country, currency_code, timezone, subscription_status, created_at, updated_at)
+            VALUES (:name, :school_code, :email, :phone, '', 'Uganda', 'UGX', 'Africa/Kampala', 'active', NOW(), NOW())
+            RETURNING id
+        """),
+        {"name": school_name, "school_code": school_code, "email": admin_email, "phone": admin_phone or ""},
+    )
+    school_id = result.scalar()
+
+    if plan_id:
+        plan = db.execute(
+            text("SELECT id, duration_days FROM subscription_plans WHERE id = :pid"),
+            {"pid": plan_id},
+        ).one_or_none()
+        if plan:
+            db.execute(
+                text("""
+                    INSERT INTO school_subscriptions (school_id, plan_id, status, starts_at, expires_at, created_at, updated_at)
+                    VALUES (:sid, :pid, 'active', NOW(), NOW() + (:days || ' days')::INTERVAL, NOW(), NOW())
+                """),
+                {"sid": school_id, "pid": plan_id, "days": str(plan[1])},
+            )
+
+    temp_password = secrets_mod.token_urlsafe(8)
+    from app.core.security import hash_password
+    hashed = hash_password(temp_password)
+    db.execute(
+        text("""
+            INSERT INTO users (name, email, phone, password_hash, role_id, school_id, is_active, is_verified, created_at, updated_at)
+            VALUES (:name, :email, :phone, :pwd, 2, :sid, true, true, NOW(), NOW())
+        """),
+        {"name": admin_name, "email": admin_email, "phone": admin_phone or "", "pwd": hashed, "sid": school_id},
+    )
+
+    raw_key = f"novara_t{school_id}_{secrets_mod.token_hex(16)}"
+    key_hash = hashlib.sha256(raw_key.encode("utf-8")).hexdigest()
+    key_prefix = raw_key[:10]
+
+    admin_user = db.execute(
+        text("SELECT id FROM users WHERE school_id = :sid AND role_id = 2 LIMIT 1"),
+        {"sid": school_id},
+    ).one_or_none()
+
+    if admin_user:
+        db.execute(
+            text("""
+                INSERT INTO api_keys (school_id, key_hash, key_prefix, is_active, created_by_id, created_at)
+                VALUES (:sid, :kh, :kp, true, :uid, NOW())
+            """),
+            {"sid": school_id, "kh": key_hash, "kp": key_prefix, "uid": admin_user[0]},
+        )
+
+    from app.models.registration import RegistrationKey
+    key_value = secrets_mod.token_hex(16).upper()
+    reg_key = RegistrationKey(
+        key=key_value,
+        school_name=school_name,
+        admin_email=admin_email,
+        plan_id=plan_id,
+    )
+    db.add(reg_key)
+    db.flush()
+    db.refresh(reg_key)
+
     db.commit()
+
+    email_sent = False
+    try:
+        from app.services.email_service import send_email
+        plan_name = "N/A"
+        if plan_id:
+            plan_row = db.execute(
+                text("SELECT name FROM subscription_plans WHERE id = :pid"),
+                {"pid": plan_id},
+            ).one_or_none()
+            if plan_row:
+                plan_name = plan_row[0]
+
+        email_sent = send_email(
+            admin_email,
+            f"Welcome to NOVARA — {school_name} is Ready",
+            f"""
+            <div style="font-family:sans-serif;max-width:500px;margin:0 auto">
+              <h2 style="color:#4f46e5">Welcome to NOVARA SMS</h2>
+              <p>Hi <strong>{admin_name}</strong>,</p>
+              <p>Your school <strong>{school_name}</strong> has been approved and provisioned.</p>
+              <div style="background:#f4f4f5;padding:16px;border-radius:10px;margin:20px 0">
+                <p style="margin:0 0 8px;font-weight:600">Login Credentials</p>
+                <p style="margin:0">Email: <code>{admin_email}</code></p>
+                <p style="margin:4px 0 0">Password: <code>{temp_password}</code></p>
+              </div>
+              <div style="background:#f4f4f5;padding:16px;border-radius:10px;margin:20px 0">
+                <p style="margin:0 0 8px;font-weight:600">Subscription Plan</p>
+                <p style="margin:0">Plan: <strong>{plan_name}</strong></p>
+              </div>
+              <div style="background:#f4f4f5;padding:16px;border-radius:10px;margin:20px 0">
+                <p style="margin:0 0 8px;font-weight:600">API Key</p>
+                <p style="margin:0;font-family:monospace;font-size:0.9rem;word-break:break-all">{raw_key}</p>
+                <p style="margin:8px 0 0;color:#666;font-size:0.85rem">Keep this key confidential. Use it to authenticate API requests.</p>
+              </div>
+              <p style="color:#999;margin-top:24px;font-size:0.8rem">Novara System Software LTD</p>
+            </div>
+            """,
+        )
+    except Exception as e:
+        logger.error("Failed to send approval email: %s", e)
 
     return {
         "product_key": reg_key.key,
-        "expires_at": reg_key.created_at.isoformat() if reg_key.created_at else "",
+        "school_id": school_id,
+        "temp_password": temp_password,
+        "api_key": raw_key,
         "email_sent": email_sent,
-        "message": f"Registration approved. Key emailed to {req[2]}." if email_sent
-                   else f"Registration approved. Key generated but email failed — copy and send manually.",
+        "message": f"Registration approved. School provisioned. Credentials emailed to {admin_email}." if email_sent
+                   else f"Registration approved. School provisioned. Email failed — copy credentials manually.",
     }
 
 

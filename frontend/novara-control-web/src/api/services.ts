@@ -130,7 +130,7 @@ export function getRegistrations(status?: string): Promise<any[]> {
   return apiRequest(`/novara/registrations${q}`);
 }
 
-export function approveRegistration(requestId: number): Promise<{ product_key: string; message: string; email_sent: boolean }> {
+export function approveRegistration(requestId: number): Promise<{ product_key: string; school_id: number; temp_password: string; api_key: string; message: string; email_sent: boolean }> {
   return apiRequest(`/novara/registrations/${requestId}/approve`, { method: "POST" });
 }
 
