@@ -261,18 +261,18 @@ def list_plans(
     from sqlalchemy import text
 
     rows = db.execute(
-        text("SELECT id, name, price_ugx, max_students, max_schools, rate_limit, is_active FROM subscription_plans ORDER BY price_ugx ASC")
+        text("SELECT id, name, price, max_students, max_staff, features, is_active FROM subscription_plans ORDER BY price ASC")
     ).fetchall()
 
     return [
         {
             "id": r[0],
             "name": r[1],
-            "price_ugx": r[2],
+            "price_ugx": float(r[2]) if r[2] else 0,
             "max_students": r[3],
             "max_schools": r[4],
-            "rate_limit": r[5],
-            "features": {},
+            "rate_limit": 100,
+            "features": r[5] or {},
             "is_active": r[6],
         }
         for r in rows
@@ -291,16 +291,16 @@ def create_plan(
 
     result = db.execute(
         text("""
-            INSERT INTO subscription_plans (name, price_ugx, max_students, max_schools, rate_limit, is_active, created_at)
-            VALUES (:name, :price, :students, :schools, :rate, true, NOW())
+            INSERT INTO subscription_plans (name, price, max_students, max_staff, features, is_active, created_at)
+            VALUES (:name, :price, :students, :staff, :features, true, NOW())
             RETURNING id
         """),
         {
             "name": payload.get("name"),
             "price": payload.get("price_ugx", 0),
             "students": payload.get("max_students"),
-            "schools": payload.get("max_schools"),
-            "rate": payload.get("rate_limit", 100),
+            "staff": payload.get("max_schools"),
+            "features": payload.get("features", {}),
         },
     )
     db.commit()

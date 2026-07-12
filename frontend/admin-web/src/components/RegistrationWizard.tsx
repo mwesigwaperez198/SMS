@@ -56,7 +56,7 @@ export function RegistrationWizard({ onBack, onComplete }: Props) {
   useEffect(() => {
     fetchPlans()
       .then(setPlans)
-      .catch(() => {})
+      .catch((e) => { console.warn("Failed to load plans:", e.message); setError("Could not load plans. Using default options."); })
       .finally(() => setPlansLoading(false));
   }, []);
 
