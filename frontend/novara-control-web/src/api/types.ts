@@ -100,6 +100,8 @@ export interface DashboardStats {
   api_calls_24h: number;
   total_revenue_ugx: number;
   system_health_score: number;
+  total_users: number;
+  total_students: number;
   recent_events: {
     type: string;
     message: string;

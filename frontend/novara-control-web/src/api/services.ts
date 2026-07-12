@@ -111,3 +111,29 @@ export function getPayments(): Promise<Payment[]> {
 export function getIncidents(): Promise<Incident[]> {
   return apiRequest("/novara/incidents").catch(() => []);
 }
+
+// ===== Maintenance =====
+export function getMaintenanceStatus(): Promise<{ enabled: boolean }> {
+  return apiRequest("/novara/maintenance");
+}
+
+export function toggleMaintenance(enabled: boolean): Promise<{ enabled: boolean; message: string }> {
+  return apiRequest("/novara/maintenance/toggle", {
+    method: "POST",
+    body: JSON.stringify({ enabled }),
+  });
+}
+
+// ===== Registrations =====
+export function getRegistrations(status?: string): Promise<any[]> {
+  const q = status ? `?status=${status}` : "";
+  return apiRequest(`/novara/registrations${q}`);
+}
+
+export function approveRegistration(requestId: number): Promise<{ product_key: string; message: string }> {
+  return apiRequest(`/novara/registrations/${requestId}/approve`, { method: "POST" });
+}
+
+export function rejectRegistration(requestId: number): Promise<{ detail: string }> {
+  return apiRequest(`/novara/registrations/${requestId}/reject`, { method: "POST" });
+}

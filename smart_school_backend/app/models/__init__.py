@@ -15,6 +15,7 @@ from app.models.student import Student, StudentGuardian
 from app.models.subscription import ProductKey, SchoolSubscription, SubscriptionPlan
 from app.models.sync import SyncChange
 from app.models.system_check import SystemCheck
+from app.models.system_setting import SystemSetting
 from app.models.user import User
 
 __all__ = [
@@ -44,5 +45,6 @@ __all__ = [
     "SubscriptionPlan",
     "SyncChange",
     "SystemCheck",
+    "SystemSetting",
     "User",
 ]

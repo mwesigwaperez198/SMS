@@ -48,7 +48,19 @@ export function LoginPage() {
 
           {error && (
             <div className="text-red-400 text-xs bg-red-500/10 border border-red-500/20 rounded-lg px-3 py-2">
-              {error}
+              {error.includes("Invalid credentials") ? (
+                <div>
+                  <p className="font-medium mb-1">Login failed</p>
+                  <p className="text-red-400/80">Invalid email or password. Only NOVARA platform admins (role_id=1) can access this panel.</p>
+                </div>
+              ) : error.includes("Request failed") ? (
+                <div>
+                  <p className="font-medium mb-1">Connection error</p>
+                  <p className="text-red-400/80">Cannot reach the server. Check your connection and try again.</p>
+                </div>
+              ) : (
+                error
+              )}
             </div>
           )}
 

@@ -100,6 +100,20 @@ def _run_migrations(db):
         except Exception as e:
             db.rollback()
             logger.warning("Migration registration_keys.plan_id: %s", e)
+    if "system_settings" not in inspector.get_table_names():
+        try:
+            db.execute(text("""
+                CREATE TABLE system_settings (
+                    id SERIAL PRIMARY KEY,
+                    key VARCHAR(100) UNIQUE NOT NULL,
+                    value TEXT NOT NULL DEFAULT 'false',
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+            """))
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.warning("Migration system_settings: %s", e)
 
 
 def create_app() -> FastAPI:

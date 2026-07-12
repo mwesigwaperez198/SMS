@@ -110,6 +110,26 @@ def complete(
     )
 
 
+@router.get("/check-email/{email}")
+def check_registration_status(
+    email: str,
+    db: Session = Depends(get_db),
+):
+    existing = db.query(RegistrationRequest).filter(
+        RegistrationRequest.admin_email == email.lower(),
+    ).order_by(RegistrationRequest.created_at.desc()).first()
+
+    if not existing:
+        return {"registered": False, "status": None, "request_id": None}
+
+    return {
+        "registered": True,
+        "status": existing.status,
+        "request_id": existing.id,
+        "school_name": existing.school_name,
+    }
+
+
 @router.get("/requests", response_model=list[RegisterSchoolResponse])
 def list_requests(
     db: Session = Depends(get_db),

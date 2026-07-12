@@ -4,13 +4,17 @@ import {
   Server, Database, Bell, Play, RefreshCw, Power, PowerOff, Zap,
 } from "lucide-react";
 import { apiRequest } from "../api/client";
+import { getMaintenanceStatus, toggleMaintenance } from "../api/services";
 
 interface SystemCheckResult {
   id: number;
+  triggered_by_name: string | null;
   status: string;
-  started_at: string;
+  scheduled_for: string;
+  started_at: string | null;
   completed_at: string | null;
   issues_found: number;
+  summary: string | null;
 }
 
 interface SystemStatus {
@@ -29,13 +33,15 @@ export function SettingsPage() {
   const [notice, setNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [maintenance, setMaintenance] = useState(false);
+  const [maintenanceLoading, setMaintenanceLoading] = useState(false);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      const [checksRes, statsRes] = await Promise.allSettled([
+      const [checksRes, statsRes, maintRes] = await Promise.allSettled([
         apiRequest<SystemCheckResult[]>("/platform/system-checks?limit=5"),
         apiRequest<any>("/platform/stats"),
+        getMaintenanceStatus(),
       ]);
       if (checksRes.status === "fulfilled") setChecks(checksRes.value);
       if (statsRes.status === "fulfilled") {
@@ -48,6 +54,9 @@ export function SettingsPage() {
           total_users: s.total_users ?? 0,
           uptime: "99.9%",
         });
+      }
+      if (maintRes.status === "fulfilled") {
+        setMaintenance(maintRes.value.enabled);
       }
     } catch (e) { /* ignore */ }
     setLoading(false);
@@ -69,12 +78,19 @@ export function SettingsPage() {
     }
   };
 
-  const toggleMaintenance = async () => {
-    const newState = !maintenance;
-    setMaintenance(newState);
-    setNotice(newState
-      ? "Maintenance mode enabled. All schools will see a maintenance page."
-      : "Maintenance mode disabled. System is back online.");
+  const handleToggleMaintenance = async () => {
+    setMaintenanceLoading(true);
+    setNotice(null);
+    try {
+      const newState = !maintenance;
+      const res = await toggleMaintenance(newState);
+      setMaintenance(newState);
+      setNotice(res.message);
+    } catch (e: any) {
+      setNotice("Failed to toggle maintenance: " + e.message);
+    } finally {
+      setMaintenanceLoading(false);
+    }
   };
 
   return (
@@ -146,8 +162,7 @@ export function SettingsPage() {
         </div>
         <p className="text-xs text-zinc-500">
           Run a comprehensive system-wide check. This sends a notification to all user roles
-          and schedules the check to run at midnight. The system will temporarily go offline
-          during maintenance, updates, and commit deployments.
+          and schedules the check to run at midnight.
         </p>
         <div className="flex items-center gap-3">
           <button
@@ -172,15 +187,21 @@ export function SettingsPage() {
       {/* Maintenance Mode */}
       <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
         <div className="flex items-center gap-2">
-          <Power size={16} className="text-red-400" />
+          <Power size={16} className={maintenance ? "text-red-400" : "text-emerald-400"} />
           <h3 className="text-sm font-medium">Maintenance Mode</h3>
+          {maintenance && (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20">
+              ACTIVE
+            </span>
+          )}
         </div>
         <p className="text-xs text-zinc-500">
           When enabled, all schools see a maintenance page. Use this during system upgrades,
           database migrations, or deployment commits.
         </p>
         <button
-          onClick={toggleMaintenance}
+          onClick={handleToggleMaintenance}
+          disabled={maintenanceLoading}
           className="flex items-center gap-2 px-4 py-2 text-xs font-medium rounded-lg transition-colors"
           style={{
             background: maintenance ? "rgba(239,68,68,0.15)" : "rgba(34,197,94,0.1)",
@@ -188,8 +209,14 @@ export function SettingsPage() {
             color: maintenance ? "#fca5a5" : "#86efac",
           }}
         >
-          {maintenance ? <PowerOff size={14} /> : <Power size={14} />}
-          {maintenance ? "Disable Maintenance" : "Enable Maintenance"}
+          {maintenanceLoading ? (
+            <RefreshCw size={14} className="animate-spin" />
+          ) : maintenance ? (
+            <PowerOff size={14} />
+          ) : (
+            <Power size={14} />
+          )}
+          {maintenanceLoading ? "Updating..." : maintenance ? "Disable Maintenance" : "Enable Maintenance"}
         </button>
       </div>
 
@@ -215,12 +242,17 @@ export function SettingsPage() {
                   ) : (
                     <Clock size={14} className="text-zinc-500" />
                   )}
-                  <span className="text-xs text-zinc-300 capitalize">{c.status}</span>
+                  <div>
+                    <span className="text-xs text-zinc-300 capitalize">{c.status}</span>
+                    {c.triggered_by_name && (
+                      <span className="text-xs text-zinc-500 ml-2">by {c.triggered_by_name}</span>
+                    )}
+                  </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs text-zinc-400">{new Date(c.started_at).toLocaleString()}</div>
-                  {c.issues_found > 0 && (
-                    <div className="text-xs text-amber-400">{c.issues_found} issues found</div>
+                  <div className="text-xs text-zinc-400">{new Date(c.scheduled_for).toLocaleString()}</div>
+                  {c.summary && (
+                    <div className="text-xs text-zinc-500">{c.summary}</div>
                   )}
                 </div>
               </div>

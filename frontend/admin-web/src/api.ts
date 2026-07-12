@@ -558,6 +558,10 @@ export async function registerSchool(payload: {
   });
 }
 
+export async function checkRegistrationEmail(email: string): Promise<{ registered: boolean; status: string | null; request_id: number | null; school_name?: string }> {
+  return apiRequest(`/api/v1/registration/check-email/${encodeURIComponent(email)}`);
+}
+
 export async function completeRegistration(payload: {
   key: string;
   email: string;

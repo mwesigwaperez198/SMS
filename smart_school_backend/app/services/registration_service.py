@@ -26,6 +26,14 @@ def create_registration_request(
     payment_method: str,
     payment_details: str,
 ) -> RegistrationRequest:
+    rejected = db.query(RegistrationRequest).filter(
+        RegistrationRequest.admin_email == admin_email,
+        RegistrationRequest.status == "rejected",
+    ).first()
+    if rejected:
+        db.delete(rejected)
+        db.flush()
+
     existing = db.query(RegistrationRequest).filter(
         RegistrationRequest.admin_email == admin_email,
         RegistrationRequest.status.in_(["pending", "approved"]),
@@ -33,7 +41,8 @@ def create_registration_request(
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="A registration request for this email is already pending or approved.",
+            detail=f"A registration request for this email is already {existing.status}. "
+                   f"Request ID: {existing.id}. Contact the platform admin.",
         )
 
     req = RegistrationRequest(
@@ -48,10 +57,10 @@ def create_registration_request(
         status="pending",
     )
     db.add(req)
-    db.commit()
+    db.flush()
     db.refresh(req)
 
-    notify_registration_request(
+    email_sent = notify_registration_request(
         school_name=school_name,
         admin_name=admin_name,
         admin_email=admin_email,
@@ -59,6 +68,14 @@ def create_registration_request(
         payment_method=payment_method,
         payment_details=payment_details,
     )
+
+    if not email_sent:
+        logger.warning(
+            "Email notification failed for registration %d. "
+            "Admin must check platform panel manually. "
+            "School: %s, Email: %s, Phone: %s",
+            req.id, school_name, admin_email, admin_phone,
+        )
 
     return req
 
@@ -81,10 +98,16 @@ def generate_registration_key(db: Session, request_id: int) -> RegistrationKey:
 
     req.status = "approved"
     db.add(req)
-    db.commit()
+    db.flush()
     db.refresh(reg_key)
 
-    send_registration_key_email(req.admin_email, req.school_name, key)
+    email_sent = send_registration_key_email(req.admin_email, req.school_name, key)
+
+    if not email_sent:
+        logger.warning(
+            "Key email failed for registration %d. Key: %s. Email: %s",
+            request_id, key, req.admin_email,
+        )
 
     return reg_key
 

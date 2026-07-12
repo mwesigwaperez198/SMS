@@ -5,7 +5,7 @@ import {
   Lock, AlertTriangle, CheckCircle2, Sparkles, Users, BookOpen,
   ClipboardList, ChevronRight, Info,
 } from "lucide-react";
-import { registerSchool, fetchPlans, completeRegistration } from "../api";
+import { registerSchool, fetchPlans, completeRegistration, checkRegistrationEmail } from "../api";
 import type { PlanItem } from "../api";
 import { PhotoCapture } from "./PhotoCapture";
 
@@ -90,6 +90,19 @@ export function RegistrationWizard({ onBack, onComplete }: Props) {
     setSubmitting(true);
     setError(null);
     try {
+      const emailCheck = await checkRegistrationEmail(schoolForm.admin_email);
+      if (emailCheck.registered) {
+        if (emailCheck.status === "pending") {
+          setError(`This email already has a pending registration (ID: ${emailCheck.request_id}) for "${emailCheck.school_name}". Contact the platform admin to approve it, or use a different email.`);
+          setSubmitting(false);
+          return;
+        }
+        if (emailCheck.status === "approved") {
+          setError(`This email already has an approved registration (ID: ${emailCheck.request_id}) for "${emailCheck.school_name}". Go to "Activate Account" to create your account with the key from your email.`);
+          setSubmitting(false);
+          return;
+        }
+      }
       const res = await registerSchool({
         school_name: schoolForm.school_name,
         admin_name: schoolForm.admin_name,

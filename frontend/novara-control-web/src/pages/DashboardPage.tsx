@@ -2,7 +2,7 @@ import { useData } from "../hooks/useData";
 import { getDashboardStats } from "../api/services";
 import {
   Building2, CreditCard, AlertTriangle, Activity,
-  TrendingUp, DollarSign, Users, ShieldCheck,
+  TrendingUp, Users, ShieldCheck,
 } from "lucide-react";
 
 export function DashboardPage() {
@@ -22,28 +22,28 @@ export function DashboardPage() {
       color: "text-emerald-400 bg-emerald-500/10",
     },
     {
-      label: "Revenue (UGX)",
-      value: (stats?.total_revenue_ugx ?? 0).toLocaleString(),
-      icon: DollarSign,
-      color: "text-amber-400 bg-amber-500/10",
-    },
-    {
-      label: "API Calls (24h)",
-      value: (stats?.api_calls_24h ?? 0).toLocaleString(),
-      icon: Activity,
-      color: "text-purple-400 bg-purple-500/10",
-    },
-    {
-      label: "Pending Payments",
+      label: "Pending Registrations",
       value: stats?.pending_payments ?? 0,
       icon: CreditCard,
       color: "text-orange-400 bg-orange-500/10",
     },
     {
-      label: "Open Incidents",
-      value: stats?.open_incidents ?? 0,
-      icon: AlertTriangle,
-      color: "text-red-400 bg-red-500/10",
+      label: "Total Users",
+      value: (stats as any)?.total_users ?? 0,
+      icon: Users,
+      color: "text-purple-400 bg-purple-500/10",
+    },
+    {
+      label: "Total Students",
+      value: (stats as any)?.total_students ?? 0,
+      icon: Users,
+      color: "text-cyan-400 bg-cyan-500/10",
+    },
+    {
+      label: "System Health",
+      value: `${stats?.system_health_score ?? 0}%`,
+      icon: Activity,
+      color: "text-emerald-400 bg-emerald-500/10",
     },
   ];
 
@@ -92,13 +92,17 @@ export function DashboardPage() {
         {stats?.recent_events && stats.recent_events.length > 0 ? (
           <div className="space-y-2">
             {stats.recent_events.map((event, i) => (
-              <div key={i} className="flex items-center gap-3 text-sm">
+              <div key={i} className="flex items-center gap-3 text-sm py-1.5 px-2 rounded-lg hover:bg-zinc-800/50 transition-colors">
                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                  event.type === "registration" ? "bg-amber-500" :
+                  event.type === "school" ? "bg-emerald-500" :
                   event.type === "critical" ? "bg-red-500" :
-                  event.type === "warning" ? "bg-amber-500" : "bg-emerald-500"
+                  event.type === "warning" ? "bg-amber-500" : "bg-blue-500"
                 }`} />
-                <span className="text-zinc-300 flex-1">{event.message}</span>
-                <span className="text-xs text-zinc-600">{event.time}</span>
+                <span className="text-zinc-300 flex-1 text-xs">{event.message}</span>
+                <span className="text-xs text-zinc-600 whitespace-nowrap">
+                  {event.time ? new Date(event.time).toLocaleDateString() : ""}
+                </span>
               </div>
             ))}
           </div>
