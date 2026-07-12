@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Building2, Plus, Search, RefreshCw, Mail, Check, X, Clock } from "lucide-react";
+import { Building2, Plus, Search, RefreshCw, Mail, Check, X, Clock, Copy, CheckCircle2, Send } from "lucide-react";
 import { useData } from "../hooks/useData";
-import { getSchools, getRegistrations, approveRegistration, rejectRegistration } from "../api/services";
+import { getSchools, getRegistrations, approveRegistration, rejectRegistration, resendKey } from "../api/services";
 import { SchoolAddModal } from "../components/SchoolAddModal";
 import type { School } from "../api/types";
 
@@ -18,6 +18,9 @@ export function SchoolsListPage({ onSelectSchool }: SchoolsListPageProps) {
   const [activeTab, setActiveTab] = useState<"schools" | "registrations">("schools");
   const [approvingId, setApprovingId] = useState<number | null>(null);
   const [rejectingId, setRejectingId] = useState<number | null>(null);
+  const [keyModal, setKeyModal] = useState<{ key: string; schoolName: string; email: string; emailSent: boolean } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [resendingId, setResendingId] = useState<number | null>(null);
 
   const filtered = (schools ?? []).filter((s) => {
     const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -37,10 +40,11 @@ export function SchoolsListPage({ onSelectSchool }: SchoolsListPageProps) {
     pending: "bg-blue-500/10 text-blue-400",
   };
 
-  const handleApprove = async (id: number) => {
+  const handleApprove = async (id: number, schoolName: string, email: string) => {
     setApprovingId(id);
     try {
-      await approveRegistration(id);
+      const res = await approveRegistration(id);
+      setKeyModal({ key: res.product_key, schoolName, email, emailSent: res.email_sent });
       refreshRegs();
       refresh();
     } catch (e: any) {
@@ -59,6 +63,26 @@ export function SchoolsListPage({ onSelectSchool }: SchoolsListPageProps) {
       alert(e.message);
     } finally {
       setRejectingId(null);
+    }
+  };
+
+  const handleResend = async (id: number) => {
+    setResendingId(id);
+    try {
+      const res = await resendKey(id);
+      alert(res.message);
+    } catch (e: any) {
+      alert(e.message);
+    } finally {
+      setResendingId(null);
+    }
+  };
+
+  const copyKey = () => {
+    if (keyModal) {
+      navigator.clipboard.writeText(keyModal.key);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
@@ -244,7 +268,7 @@ export function SchoolsListPage({ onSelectSchool }: SchoolsListPageProps) {
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => handleApprove(reg.id)}
+                            onClick={() => handleApprove(reg.id, reg.school_name, reg.admin_email)}
                             disabled={approvingId === reg.id}
                             className="flex items-center gap-1 px-2 py-1 text-xs rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 hover:bg-emerald-500/20 transition-colors disabled:opacity-50"
                           >
@@ -271,6 +295,49 @@ export function SchoolsListPage({ onSelectSchool }: SchoolsListPageProps) {
       )}
 
       {showAdd && <SchoolAddModal onClose={() => { setShowAdd(false); refresh(); }} />}
+
+      {keyModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-md">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 size={18} className="text-emerald-400" />
+                <h3 className="text-sm font-medium">Registration Approved</h3>
+              </div>
+              <button onClick={() => setKeyModal(null)} className="p-1 rounded-lg text-zinc-500 hover:text-zinc-300">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="text-xs text-zinc-400">
+                <p>School: <span className="text-zinc-200">{keyModal.schoolName}</span></p>
+                <p>Email: <span className="text-zinc-200">{keyModal.email}</span></p>
+              </div>
+
+              <div className={`rounded-lg p-3 text-xs ${keyModal.emailSent ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" : "bg-amber-500/10 text-amber-400 border border-amber-500/20"}`}>
+                {keyModal.emailSent
+                  ? `Key emailed to ${keyModal.email}`
+                  : `Email failed — copy and send the key manually to ${keyModal.email}`}
+              </div>
+
+              <div>
+                <div className="text-xs text-zinc-500 mb-1.5">Registration Key</div>
+                <div className="flex items-center gap-2 bg-zinc-800 rounded-lg p-3">
+                  <code className="text-sm text-zinc-200 font-mono break-all flex-1">{keyModal.key}</code>
+                  <button onClick={copyKey} className="p-1 rounded text-zinc-500 hover:text-zinc-300 shrink-0">
+                    {copied ? <CheckCircle2 size={16} className="text-emerald-400" /> : <Copy size={16} />}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="px-5 py-4 border-t border-zinc-800 flex justify-end">
+              <button onClick={() => setKeyModal(null)} className="bg-indigo-500 hover:bg-indigo-600 text-white text-xs font-medium rounded-lg px-4 py-2 transition-colors">
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

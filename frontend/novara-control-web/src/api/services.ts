@@ -130,10 +130,14 @@ export function getRegistrations(status?: string): Promise<any[]> {
   return apiRequest(`/novara/registrations${q}`);
 }
 
-export function approveRegistration(requestId: number): Promise<{ product_key: string; message: string }> {
+export function approveRegistration(requestId: number): Promise<{ product_key: string; message: string; email_sent: boolean }> {
   return apiRequest(`/novara/registrations/${requestId}/approve`, { method: "POST" });
 }
 
 export function rejectRegistration(requestId: number): Promise<{ detail: string }> {
   return apiRequest(`/novara/registrations/${requestId}/reject`, { method: "POST" });
+}
+
+export function resendKey(requestId: number): Promise<{ message: string; email_sent: boolean }> {
+  return apiRequest(`/novara/registrations/${requestId}/resend-key`, { method: "POST" });
 }

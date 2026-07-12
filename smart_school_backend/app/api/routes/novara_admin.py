@@ -771,7 +771,45 @@ def approve_registration(
     return {
         "product_key": reg_key.key,
         "expires_at": reg_key.created_at.isoformat() if reg_key.created_at else "",
-        "message": f"Registration approved. Key emailed to {req[2]}.",
+        "email_sent": email_sent,
+        "message": f"Registration approved. Key emailed to {req[2]}." if email_sent
+                   else f"Registration approved. Key generated but email failed — copy and send manually.",
+    }
+
+
+@router.post("/registrations/{request_id}/resend-key")
+def resend_registration_key(
+    request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    _check_novara(current_user)
+    from sqlalchemy import text
+
+    req = db.execute(
+        text("SELECT id, status, admin_email, school_name FROM registration_requests WHERE id = :id"),
+        {"id": request_id},
+    ).one_or_none()
+    if not req:
+        raise HTTPException(status_code=404, detail="Registration not found")
+    if req[1] != "approved":
+        raise HTTPException(status_code=400, detail="Registration is not approved yet")
+
+    existing_key = db.execute(
+        text("SELECT key FROM registration_keys WHERE admin_email = :email AND is_used = false ORDER BY created_at DESC LIMIT 1"),
+        {"email": req[2]},
+    ).one_or_none()
+
+    if not existing_key:
+        raise HTTPException(status_code=404, detail="No unused key found for this registration")
+
+    from app.services.email_service import send_registration_key_email
+    email_sent = send_registration_key_email(req[2], req[3], existing_key[0])
+
+    return {
+        "message": f"Key re-sent to {req[2]}." if email_sent
+                   else f"Email failed. Key: {existing_key[0]} — copy and send manually.",
+        "email_sent": email_sent,
     }
 
 

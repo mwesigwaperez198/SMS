@@ -92,6 +92,7 @@ export function PaymentsPage() {
                     <td className="px-4 py-3">
                       <div className="font-medium text-zinc-100">{reg.school_name}</div>
                       <div className="text-xs text-zinc-500">{reg.admin_email}</div>
+                      {reg.admin_phone && <div className="text-xs text-zinc-600">{reg.admin_phone}</div>}
                     </td>
                     <td className="px-4 py-3 text-zinc-400 text-xs">{reg.plan_name || "N/A"}</td>
                     <td className="px-4 py-3 text-zinc-400 text-xs">{methodLabel[reg.payment_method] || reg.payment_method}</td>

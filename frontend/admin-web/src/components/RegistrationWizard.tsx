@@ -482,29 +482,75 @@ function StepPlan({
             <Smartphone size={18} />
             <div>
               <p>Payment</p>
-              <h2>Payment Method</h2>
+              <h2>How to Pay</h2>
             </div>
           </div>
+
+          <div style={{
+            padding: "14px", background: "rgba(102,126,234,0.08)", borderRadius: 10,
+            border: "1px solid rgba(102,126,234,0.15)", marginBottom: 12,
+          }}>
+            <div style={{ fontSize: "0.82rem", fontWeight: 600, color: "#a5b4fc", marginBottom: 8 }}>
+              NOVARA Payment Accounts
+            </div>
+            <div style={{ display: "grid", gap: 8 }}>
+              <div style={{
+                padding: "10px 12px", borderRadius: 8,
+                background: "rgba(251,191,36,0.06)", border: "1px solid rgba(251,191,36,0.12)",
+              }}>
+                <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "#fbbf24", marginBottom: 4 }}>MTN Mobile Money</div>
+                <div style={{ fontSize: "0.85rem", color: "#f1f5f9", fontFamily: "monospace" }}>0765 866 555</div>
+                <div style={{ fontSize: "0.7rem", color: "var(--muted)", marginTop: 2 }}>Name: Novara System Software LTD</div>
+              </div>
+              <div style={{
+                padding: "10px 12px", borderRadius: 8,
+                background: "rgba(52,211,153,0.06)", border: "1px solid rgba(52,211,153,0.12)",
+              }}>
+                <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "#34d399", marginBottom: 4 }}>Airtel Money</div>
+                <div style={{ fontSize: "0.85rem", color: "#f1f5f9", fontFamily: "monospace" }}>0765 866 555</div>
+                <div style={{ fontSize: "0.7rem", color: "var(--muted)", marginTop: 2 }}>Name: Novara System Software LTD</div>
+              </div>
+              <div style={{
+                padding: "10px 12px", borderRadius: 8,
+                background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.12)",
+              }}>
+                <div style={{ fontSize: "0.75rem", fontWeight: 600, color: "#818cf8", marginBottom: 4 }}>Bank Account</div>
+                <div style={{ fontSize: "0.85rem", color: "#f1f5f9" }}>Centenary Bank — Kampala Road Branch</div>
+                <div style={{ fontSize: "0.8rem", color: "#f1f5f9", fontFamily: "monospace", marginTop: 2 }}>A/C: 20012345678</div>
+                <div style={{ fontSize: "0.7rem", color: "var(--muted)", marginTop: 2 }}>Name: Novara System Software LTD</div>
+              </div>
+            </div>
+          </div>
+
+          <div style={{
+            padding: "10px 14px", background: "rgba(52,211,153,0.08)", borderRadius: 10,
+            border: "1px solid rgba(52,211,153,0.15)", marginBottom: 12,
+          }}>
+            <div style={{ fontSize: "0.78rem", color: "var(--muted)", lineHeight: 1.6 }}>
+              <strong style={{ color: "#34d399" }}>Steps:</strong> Send payment to any account above. Then enter your payment reference below so our team can verify.
+            </div>
+          </div>
+
           <div className="login-form-fields">
             <label className="form-field">
-              <span className="field-label">Method *</span>
+              <span className="field-label">Payment Method *</span>
               <select value={paymentMethod} onChange={onPaymentMethod} className="field-input">
                 <option value="mobile_money">Mobile Money (MTN/Airtel)</option>
-                <option value="bank_account">Bank Account</option>
+                <option value="bank_account">Bank Transfer</option>
               </select>
             </label>
             <label className="form-field">
               <span className="field-label">
-                {paymentMethod === "mobile_money" ? "Mobile Money Number *" : "Bank Account Details *"}
+                Your Payment Reference / Transaction ID *
               </span>
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 {paymentMethod === "mobile_money" ? <Smartphone size={16} style={{ color: "var(--muted)", flexShrink: 0 }} /> : <Landmark size={16} style={{ color: "var(--muted)", flexShrink: 0 }} />}
                 <input value={paymentDetails} onChange={onPaymentDetails}
-                  placeholder={paymentMethod === "mobile_money" ? "e.g. 0700 000000 (MTN)" : "Bank name, account name, number"}
+                  placeholder={paymentMethod === "mobile_money" ? "e.g. MTN TXN: QK4XYZ1234 or your phone number" : "Bank slip number or deposit reference"}
                   className="field-input" required />
               </div>
               <small style={{ color: "var(--muted)", fontSize: "0.75rem", marginTop: 4, display: "block" }}>
-                Payment details will be sent to the Novara team for verification.
+                Enter the transaction ID, receipt number, or phone number you paid from. Our team will verify before approving.
               </small>
             </label>
           </div>
