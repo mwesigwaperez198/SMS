@@ -91,7 +91,7 @@ export function revokeApiKey(keyId: number): Promise<{ detail: string }> {
 
 // ===== Health =====
 export function getHealth(): Promise<HealthCheck[]> {
-  return apiRequest("/novara/health");
+  return apiRequest("/novara/health").catch(() => []);
 }
 
 // ===== Audit =====
@@ -104,10 +104,10 @@ export function getAuditLogs(params?: { school_id?: number; limit?: number }): P
 
 // ===== Payments =====
 export function getPayments(): Promise<Payment[]> {
-  return apiRequest("/novara/payments");
+  return apiRequest("/novara/payments").catch(() => []);
 }
 
 // ===== Incidents =====
 export function getIncidents(): Promise<Incident[]> {
-  return apiRequest("/novara/incidents");
+  return apiRequest("/novara/incidents").catch(() => []);
 }

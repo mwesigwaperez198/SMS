@@ -22,6 +22,8 @@ interface SuperAdminWorkspaceProps {
 
 export function SuperAdminWorkspace({ view, data, onViewChange }: SuperAdminWorkspaceProps) {
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Real data states
   const [stats, setStats] = useState<PlatformStats | null>(null);
@@ -34,13 +36,24 @@ export function SuperAdminWorkspace({ view, data, onViewChange }: SuperAdminWork
   const [statusFilter, setStatusFilter] = useState("");
 
   useEffect(() => {
-    fetchPlatformStats().then(setStats).catch(() => {});
-    fetchPlatformSchools().then(setSchools).catch(() => {});
-    fetchRegistrations().then(setRegistrations).catch(() => {});
-    fetchPlans().then(setPlans).catch(() => {});
-    fetchKeys().then(setKeys).catch(() => {});
-    fetchPlatformAuditLogs(100).then(setAuditLogs).catch(() => {});
-    fetchPlatformUsers().then(setPlatformUsers).catch(() => {});
+    setLoading(true);
+    setLoadError(null);
+    Promise.allSettled([
+      fetchPlatformStats().then(setStats),
+      fetchPlatformSchools().then(setSchools),
+      fetchRegistrations().then(setRegistrations),
+      fetchPlans().then(setPlans),
+      fetchKeys().then(setKeys),
+      fetchPlatformAuditLogs(100).then(setAuditLogs),
+      fetchPlatformUsers().then(setPlatformUsers),
+    ]).then(results => {
+      const failures = results.filter(r => r.status === "rejected");
+      if (failures.length === results.length) {
+        setLoadError("Failed to load data. Check your login session and try again.");
+      } else if (failures.length > 0) {
+        setLoadError(`Some data failed to load (${failures.length} of ${results.length}). Showing partial data.`);
+      }
+    }).finally(() => setLoading(false));
   }, []);
 
   const filteredSchools = schools.filter(s =>
@@ -52,15 +65,45 @@ export function SuperAdminWorkspace({ view, data, onViewChange }: SuperAdminWork
     !search || l.action?.toLowerCase().includes(search.toLowerCase()) || l.actor_name?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const LoadingBanner = () => loading ? (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", marginBottom: 12, background: "rgba(102,126,234,0.08)", borderRadius: 8, border: "1px solid rgba(102,126,234,0.15)" }}>
+      <span className="spinner" />
+      <span style={{ fontSize: "0.82rem", color: "#a5b4fc" }}>Loading platform data...</span>
+    </div>
+  ) : null;
+
+  const ErrorBanner = () => loadError ? (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", marginBottom: 12, background: "rgba(239,68,68,0.08)", borderRadius: 8, border: "1px solid rgba(239,68,68,0.15)" }}>
+      <AlertTriangle size={16} style={{ color: "#ef4444", flexShrink: 0 }} />
+      <span style={{ fontSize: "0.82rem", color: "#fca5a5" }}>{loadError}</span>
+      <button onClick={() => { setLoading(true); setLoadError(null); Promise.allSettled([
+        fetchPlatformStats().then(setStats),
+        fetchPlatformSchools().then(setSchools),
+        fetchRegistrations().then(setRegistrations),
+        fetchPlans().then(setPlans),
+        fetchKeys().then(setKeys),
+        fetchPlatformAuditLogs(100).then(setAuditLogs),
+        fetchPlatformUsers().then(setPlatformUsers),
+      ]).then(r => { const f = r.filter(x => x.status === "rejected"); if (f.length === r.length) setLoadError("Failed to load data."); }).finally(() => setLoading(false)); }}
+        style={{ marginLeft: "auto", padding: "4px 10px", borderRadius: 6, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.1)", color: "#fca5a5", fontSize: "0.75rem", cursor: "pointer" }}>
+        Retry
+      </button>
+    </div>
+  ) : null;
+
   const Metrics = () => {
     const s = stats;
     return (
-      <div className="metric-grid">
-        <div className="metric teal"><div className="metric-icon"><ShieldCheck size={22}/></div><div className="metric-body"><strong>{(s?.active_schools ?? data.systemSchools.filter(s => s.status === "Active").length)}</strong><span>Active Schools</span></div></div>
-        <div className="metric green"><div className="metric-icon"><Activity size={22}/></div><div className="metric-body"><strong>{(s?.total_students ?? data.systemSchools.reduce((a, sc) => a + sc.students, 0)).toLocaleString()}</strong><span>Total Students</span></div></div>
-        <div className="metric red" style={{cursor:"pointer"}} onClick={() => onViewChange?.("System Alerts")}><div className="metric-icon"><AlertTriangle size={22}/></div><div className="metric-body"><strong>{s?.pending_registrations ?? data.systemAlerts.filter(a => a.severity === "critical").length}</strong><span>System Alerts</span></div></div>
-        <div className="metric blue"><div className="metric-icon"><Key size={22}/></div><div className="metric-body"><strong>{s?.keys_generated_30d ?? 0}</strong><span>Keys (30d)</span></div></div>
-      </div>
+      <>
+        <LoadingBanner />
+        <ErrorBanner />
+        <div className="metric-grid">
+          <div className="metric teal"><div className="metric-icon"><ShieldCheck size={22}/></div><div className="metric-body"><strong>{(s?.active_schools ?? 0)}</strong><span>Active Schools</span></div></div>
+          <div className="metric green"><div className="metric-icon"><Activity size={22}/></div><div className="metric-body"><strong>{(s?.total_students ?? 0).toLocaleString()}</strong><span>Total Students</span></div></div>
+          <div className="metric red" style={{cursor:"pointer"}} onClick={() => onViewChange?.("System Alerts")}><div className="metric-icon"><AlertTriangle size={22}/></div><div className="metric-body"><strong>{s?.pending_registrations ?? 0}</strong><span>Pending Registrations</span></div></div>
+          <div className="metric blue"><div className="metric-icon"><Key size={22}/></div><div className="metric-body"><strong>{s?.keys_generated_30d ?? 0}</strong><span>Keys (30d)</span></div></div>
+        </div>
+      </>
     );
   };
 
@@ -68,10 +111,10 @@ export function SuperAdminWorkspace({ view, data, onViewChange }: SuperAdminWork
   if (view === "Dashboard") {
     const s = stats;
     const health = [
-      { name: "API Server", ok: true },
-      { name: "Database", ok: true },
-      { name: "SMS Gateway", ok: true },
-      { name: "File Storage", ok: false },
+      { name: "API Server", ok: !!s },
+      { name: "Database", ok: !!s },
+      { name: "Subscriptions", ok: (s?.active_subscriptions ?? 0) > 0 },
+      { name: "Schools Registered", ok: (s?.total_schools ?? 0) > 0 },
     ];
     const perf = [
       ["Total Schools", String(s?.total_schools ?? 0)],
@@ -597,25 +640,41 @@ export function SuperAdminWorkspace({ view, data, onViewChange }: SuperAdminWork
 
   // ===================== System Alerts =====================
   if (view === "System Alerts") {
+    const recentLogs = auditLogs.slice(0, 50);
+    const pendingRegs = registrations.filter(r => r.status === "pending");
     return (
       <div className="content-grid">
         <Metrics />
+        {pendingRegs.length > 0 && (
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "#fbbf24", marginBottom: 8 }}>Pending Registrations ({pendingRegs.length})</div>
+            {pendingRegs.map(r => (
+              <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: "rgba(251,191,36,0.08)", borderRadius: 8, border: "1px solid rgba(251,191,36,0.15)", marginBottom: 6 }}>
+                <AlertTriangle size={15} style={{ color: "#fbbf24", flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <strong style={{ fontSize: "0.85rem" }}>{r.school_name}</strong>
+                  <span style={{ fontSize: "0.78rem", color: "var(--muted)" }}> — {r.admin_name} ({r.admin_email})</span>
+                </div>
+                <span className="badge warning">pending</span>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="stack-list list-panel">
-          {data.systemAlerts.map(a => (
+          <div className="panel-title"><strong style={{ fontSize: "0.9rem" }}>Recent Activity</strong></div>
+          {recentLogs.map(a => (
             <div key={a.id} className="list-row">
-              <AlertTriangle size={16} style={{color: a.severity==="critical" ? "#ef4444" : "#f59e0b", flexShrink:0}}/>
-              <div>
-                <strong style={{fontSize:"0.9rem"}}>{a.type}</strong>
-                <br/><span style={{fontSize:"0.78rem",color:"var(--muted)"}}>{a.message}</span>
-                {a.school && <span style={{fontSize:"0.78rem",color:"var(--muted)"}}> · {a.school}</span>}
+              <Activity size={15} style={{ color: "var(--primary)", flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <strong style={{ fontSize: "0.85rem" }}>{a.action}</strong>
+                <br /><span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>{a.actor_name} · {a.entity_type} {a.entity_id ? `#${a.entity_id}` : ""}</span>
               </div>
-              <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:4}}>
-                <span className={`badge ${a.severity==="critical" ? "error" : "warning"}`}>{a.severity}</span>
-                <span style={{fontSize:"0.75rem",color:"var(--muted)"}}>{a.time}</span>
-              </div>
+              <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>{a.created_at ? new Date(a.created_at).toLocaleDateString() : ""}</span>
             </div>
           ))}
-          {data.systemAlerts.length === 0 && <p className="empty-state">No alerts</p>}
+          {recentLogs.length === 0 && pendingRegs.length === 0 && (
+            <p className="empty-state">No alerts or recent activity</p>
+          )}
         </div>
       </div>
     );
@@ -687,23 +746,29 @@ export function SuperAdminWorkspace({ view, data, onViewChange }: SuperAdminWork
 
   // ===================== Support =====================
   if (view === "Support") {
+    const s = stats;
     return (
       <div className="content-grid">
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:14}}>
-          {(
-            [
-              [Ticket,"Open Tickets","12 pending support requests from schools"],
-              [Settings,"DB Migrations","Manage schema updates and rollbacks"],
-              [Activity,"Runtime Logs","Monitor active processes and errors"],
-            ] as [typeof Ticket, string, string][]
-          ).map(([Icon, title, desc]) => (
-            <div key={title} className="detail-panel" style={{padding:20,display:"grid",gap:10}}>
-              <Icon size={28} style={{color:"var(--primary)"}}/>
-              <strong>{title}</strong>
-              <span style={{fontSize:"0.82rem",color:"var(--muted)"}}>{desc}</span>
-              <button className="tool-button primary"><Activity size={14}/>Open</button>
-            </div>
-          ))}
+        <Metrics />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14 }}>
+          <div className="detail-panel" style={{ padding: 20, display: "grid", gap: 10 }}>
+            <Users size={28} style={{ color: "var(--primary)" }} />
+            <strong>Users</strong>
+            <span style={{ fontSize: "1.5rem", fontWeight: 700 }}>{s?.total_users ?? 0}</span>
+            <span style={{ fontSize: "0.82rem", color: "var(--muted)" }}>registered across all schools</span>
+          </div>
+          <div className="detail-panel" style={{ padding: 20, display: "grid", gap: 10 }}>
+            <Key size={28} style={{ color: "var(--primary)" }} />
+            <strong>Keys Generated</strong>
+            <span style={{ fontSize: "1.5rem", fontWeight: 700 }}>{s?.keys_generated_30d ?? 0}</span>
+            <span style={{ fontSize: "0.82rem", color: "var(--muted)" }}>in the last 30 days</span>
+          </div>
+          <div className="detail-panel" style={{ padding: 20, display: "grid", gap: 10 }}>
+            <Globe size={28} style={{ color: "var(--primary)" }} />
+            <strong>Schools</strong>
+            <span style={{ fontSize: "1.5rem", fontWeight: 700 }}>{s?.total_schools ?? 0}</span>
+            <span style={{ fontSize: "0.82rem", color: "var(--muted)" }}>{s?.active_subscriptions ?? 0} active subscriptions</span>
+          </div>
         </div>
       </div>
     );

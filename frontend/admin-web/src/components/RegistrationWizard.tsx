@@ -80,6 +80,8 @@ export function RegistrationWizard({ onBack, onComplete }: Props) {
     }
   };
 
+  const [submitted, setSubmitted] = useState(false);
+
   const handleSubmitSchool = async () => {
     setSubmitting(true);
     setError(null);
@@ -95,7 +97,7 @@ export function RegistrationWizard({ onBack, onComplete }: Props) {
         payment_details: schoolForm.payment_details,
       });
       setSuccessMsg(res.message);
-      setStep(3);
+      setSubmitted(true);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -140,6 +142,81 @@ export function RegistrationWizard({ onBack, onComplete }: Props) {
   const prev = () => { setStep(s => Math.max(s - 1, 0)); setError(null); };
 
   const selectedPlan = plans.find(p => p.id === schoolForm.plan_id);
+
+  if (submitted) {
+    return (
+      <main className="login-screen">
+        <div className="login-background-orb login-orb-1" />
+        <div className="login-background-orb login-orb-2" />
+        <section className="login-panel" style={{ maxWidth: 520 }}>
+          <div className="login-brand">
+            <div className="brand-mark">N</div>
+            <div>
+              <p>Smart School Management</p>
+              <h1>Registration Received</h1>
+            </div>
+          </div>
+          <div className="login-card">
+            <div style={{ textAlign: "center", padding: "12px 0 8px" }}>
+              <div style={{
+                width: 64, height: 64, borderRadius: "50%", background: "rgba(52,211,153,0.12)",
+                border: "2px solid rgba(52,211,153,0.3)", display: "grid", placeItems: "center", margin: "0 auto 14px",
+              }}>
+                <CheckCircle2 size={32} style={{ color: "#34d399" }} />
+              </div>
+              <h2 style={{ fontSize: "1.15rem", color: "#f1f5f9", marginBottom: 6 }}>Thank You, {schoolForm.admin_name}!</h2>
+              <p style={{ fontSize: "0.88rem", color: "var(--muted)", lineHeight: 1.6 }}>
+                Your registration for <strong style={{ color: "#a5b4fc" }}>{schoolForm.school_name}</strong> has been received and is pending review.
+              </p>
+            </div>
+
+            <div style={{
+              padding: "14px", background: "rgba(102,126,234,0.08)", borderRadius: 10,
+              border: "1px solid rgba(102,126,234,0.15)", marginTop: 12,
+            }}>
+              <div style={{ fontSize: "0.82rem", fontWeight: 600, color: "#a5b4fc", marginBottom: 8 }}>What happens next?</div>
+              <div style={{ display: "grid", gap: 10 }}>
+                {[
+                  { num: "1", icon: ClipboardList, title: "Review", desc: "Our team reviews your registration and payment details within 24-48 hours." },
+                  { num: "2", icon: Mail, title: "Email Your Key", desc: `A unique registration key will be sent to ${schoolForm.admin_email}.` },
+                  { num: "3", icon: KeyRound, title: "Activate Account", desc: "Return to this page, click 'Activate Account', enter your key to create your admin login." },
+                ].map(({ num, icon: Icon, title, desc }) => (
+                  <div key={num} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <div style={{
+                      width: 24, height: 24, borderRadius: "50%", background: "#667eea",
+                      display: "grid", placeItems: "center", flexShrink: 0,
+                      fontSize: "0.7rem", fontWeight: 700, color: "#fff",
+                    }}>{num}</div>
+                    <div>
+                      <div style={{ fontSize: "0.82rem", fontWeight: 600, color: "#f1f5f9" }}>{title}</div>
+                      <div style={{ fontSize: "0.75rem", color: "var(--muted)", lineHeight: 1.5 }}>{desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{
+              marginTop: 14, padding: "10px 14px", background: "rgba(251,191,36,0.08)",
+              borderRadius: 10, border: "1px solid rgba(251,191,36,0.15)",
+              display: "flex", gap: 8, alignItems: "flex-start",
+            }}>
+              <AlertTriangle size={16} style={{ color: "#fbbf24", flexShrink: 0, marginTop: 2 }} />
+              <div style={{ fontSize: "0.75rem", color: "var(--muted)", lineHeight: 1.5 }}>
+                <strong style={{ color: "#fbbf24" }}>Important:</strong> Check your email inbox (and spam folder) for the registration key. You cannot activate your account without it.
+              </div>
+            </div>
+
+            <div className="login-actions" style={{ marginTop: 16, justifyContent: "center" }}>
+              <button type="button" className="primary-button gradient-button" onClick={onBack}>
+                <span><CheckCircle2 size={16} /> Back to Home</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="login-screen">
