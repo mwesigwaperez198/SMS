@@ -33,6 +33,7 @@ function AppContent() {
   const [theme, setTheme] = useState(() => localStorage.getItem("novara_theme") || "dark");
 
   useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
     document.documentElement.classList.toggle("light", theme === "light");
     localStorage.setItem("novara_theme", theme);
   }, [theme]);
