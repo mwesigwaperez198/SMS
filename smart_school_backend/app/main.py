@@ -115,6 +115,98 @@ def _run_migrations(db):
             db.rollback()
             logger.warning("Migration system_settings: %s", e)
 
+    if "cashbook_entries" not in inspector.get_table_names():
+        try:
+            db.execute(text("""
+                CREATE TABLE cashbook_entries (
+                    id SERIAL PRIMARY KEY,
+                    school_id INTEGER NOT NULL REFERENCES schools(id),
+                    date VARCHAR(20) NOT NULL,
+                    description VARCHAR(200) NOT NULL,
+                    amount NUMERIC(12,2) NOT NULL,
+                    paid_by VARCHAR(120) NOT NULL,
+                    payment_method VARCHAR(50) NOT NULL,
+                    receipt_no VARCHAR(50) UNIQUE NOT NULL,
+                    entry_type VARCHAR(20) NOT NULL DEFAULT 'Income',
+                    created_by_id INTEGER REFERENCES users(id),
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+            """))
+            db.execute(text("CREATE INDEX idx_cashbook_entries_school_id ON cashbook_entries(school_id)"))
+            db.commit()
+            logger.info("Created cashbook_entries table")
+        except Exception as e:
+            db.rollback()
+            logger.warning("Migration cashbook_entries: %s", e)
+
+    if "quotations" not in inspector.get_table_names():
+        try:
+            db.execute(text("""
+                CREATE TABLE quotations (
+                    id SERIAL PRIMARY KEY,
+                    school_id INTEGER NOT NULL REFERENCES schools(id),
+                    quotation_no VARCHAR(50) UNIQUE NOT NULL,
+                    customer VARCHAR(200) NOT NULL,
+                    date VARCHAR(20) NOT NULL,
+                    items TEXT NOT NULL,
+                    notes TEXT DEFAULT '',
+                    total NUMERIC(12,2) NOT NULL,
+                    status VARCHAR(20) NOT NULL DEFAULT 'Draft',
+                    created_by_id INTEGER REFERENCES users(id),
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+            """))
+            db.execute(text("CREATE INDEX idx_quotations_school_id ON quotations(school_id)"))
+            db.commit()
+            logger.info("Created quotations table")
+        except Exception as e:
+            db.rollback()
+            logger.warning("Migration quotations: %s", e)
+
+    if "requisitions" not in inspector.get_table_names():
+        try:
+            db.execute(text("""
+                CREATE TABLE requisitions (
+                    id SERIAL PRIMARY KEY,
+                    school_id INTEGER NOT NULL REFERENCES schools(id),
+                    req_no VARCHAR(50) UNIQUE NOT NULL,
+                    department VARCHAR(200) NOT NULL,
+                    requested_by VARCHAR(120) NOT NULL,
+                    date VARCHAR(20) NOT NULL,
+                    items TEXT NOT NULL,
+                    purpose TEXT DEFAULT '',
+                    total NUMERIC(12,2) NOT NULL,
+                    status VARCHAR(20) NOT NULL DEFAULT 'Pending',
+                    created_by_id INTEGER REFERENCES users(id),
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+            """))
+            db.execute(text("CREATE INDEX idx_requisitions_school_id ON requisitions(school_id)"))
+            db.commit()
+            logger.info("Created requisitions table")
+        except Exception as e:
+            db.rollback()
+            logger.warning("Migration requisitions: %s", e)
+
+    if "bank_accounts" not in inspector.get_table_names():
+        try:
+            db.execute(text("""
+                CREATE TABLE bank_accounts (
+                    id SERIAL PRIMARY KEY,
+                    school_id INTEGER NOT NULL REFERENCES schools(id),
+                    bank_name VARCHAR(200) NOT NULL,
+                    account_name VARCHAR(200) NOT NULL,
+                    account_number VARCHAR(100) NOT NULL,
+                    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+                )
+            """))
+            db.execute(text("CREATE INDEX idx_bank_accounts_school_id ON bank_accounts(school_id)"))
+            db.commit()
+            logger.info("Created bank_accounts table")
+        except Exception as e:
+            db.rollback()
+            logger.warning("Migration bank_accounts: %s", e)
+
 
 def create_app() -> FastAPI:
     settings = get_settings()

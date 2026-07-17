@@ -17,6 +17,7 @@ from app.api.routes import (
     platform_admin,
     registration,
     report_cards,
+    role_extensions,
     students,
     subscriptions,
     sync,
@@ -44,3 +45,4 @@ api_router.include_router(subscriptions.router)
 api_router.include_router(platform_admin.router)
 api_router.include_router(novara_admin.router)
 api_router.include_router(api_key_auth.router)
+api_router.include_router(role_extensions.router)

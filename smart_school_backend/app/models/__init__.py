@@ -4,6 +4,7 @@ from app.models.assessment import Assessment
 from app.models.attendance import Attendance
 from app.models.audit import AuditLog
 from app.models.fees import FeeCategory, Invoice, Payment, Receipt
+from app.models.finance import BankAccount, CashEntry, Quotation, Requisition
 from app.models.library import LibraryBook, LibraryBorrow, LibraryRequest
 from app.models.leave import LeaveRequest
 from app.models.notification import Notification
@@ -23,7 +24,9 @@ __all__ = [
     "Assessment",
     "Attendance",
     "AuditLog",
+    "BankAccount",
     "Base",
+    "CashEntry",
     "FeeCategory",
     "Invoice",
     "LeaveRequest",
@@ -33,9 +36,11 @@ __all__ = [
     "Notification",
     "Payment",
     "ProductKey",
+    "Quotation",
     "Receipt",
     "RegistrationKey",
     "RegistrationRequest",
+    "Requisition",
     "ReportCard",
     "Role",
     "School",
