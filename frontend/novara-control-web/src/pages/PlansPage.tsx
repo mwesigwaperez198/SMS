@@ -29,7 +29,7 @@ export function PlansPage() {
     return (
       <div className="p-6 space-y-3">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="h-24 bg-zinc-900 rounded-xl animate-pulse" />
+          <div key={i} className="h-24 bg-white dark:bg-zinc-900 rounded-xl animate-pulse" />
         ))}
       </div>
     );
@@ -47,7 +47,7 @@ export function PlansPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <CreditCard size={18} className="text-zinc-400" />
+          <CreditCard size={18} className="text-zinc-500 dark:text-zinc-400" />
           <h2 className="text-sm font-medium">Subscription Plans</h2>
         </div>
         <button
@@ -60,10 +60,10 @@ export function PlansPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {(plans ?? []).map((plan) => (
-          <div key={plan.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-3">
+          <div key={plan.id} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium">{plan.name}</h3>
-              <span className={`text-xs px-2 py-0.5 rounded-full ${plan.is_active ? "bg-emerald-500/10 text-emerald-400" : "bg-zinc-500/10 text-zinc-400"}`}>
+              <span className={`text-xs px-2 py-0.5 rounded-full ${plan.is_active ? "bg-emerald-500/10 text-emerald-400" : "bg-zinc-500/10 text-zinc-500 dark:text-zinc-400"}`}>
                 {plan.is_active ? "Active" : "Disabled"}
               </span>
             </div>
@@ -71,14 +71,14 @@ export function PlansPage() {
               UGX {plan.price_ugx.toLocaleString()}
               <span className="text-xs text-zinc-500 font-normal">/mo</span>
             </div>
-            <div className="space-y-1 text-sm text-zinc-400">
+            <div className="space-y-1 text-sm text-zinc-500 dark:text-zinc-400">
               <p>{plan.max_students ?? "∞"} students</p>
               <p>{plan.max_schools ?? "∞"} schools</p>
               <p>{plan.rate_limit} req/min rate limit</p>
             </div>
             <button
               onClick={() => setEditing(plan)}
-              className="w-full text-sm text-zinc-400 hover:text-zinc-200 bg-zinc-800/50 hover:bg-zinc-800 rounded-lg px-3 py-2 transition-colors"
+              className="w-full text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2 transition-colors"
             >
               Edit
             </button>
@@ -88,7 +88,7 @@ export function PlansPage() {
 
       {editing && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-md p-5 space-y-4">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl w-full max-w-md p-5 space-y-4">
             <h3 className="text-sm font-medium">{editing.id ? "Edit Plan" : "New Plan"}</h3>
             <Field label="Name" value={editing.name || ""} onChange={(v) => setEditing({ ...editing, name: v })} />
             <Field label="Price (UGX)" type="number" value={String(editing.price_ugx || 0)} onChange={(v) => setEditing({ ...editing, price_ugx: Number(v) })} />
@@ -96,11 +96,11 @@ export function PlansPage() {
             <Field label="Max Schools" type="number" value={String(editing.max_schools ?? "")} onChange={(v) => setEditing({ ...editing, max_schools: v ? Number(v) : null })} />
             <Field label="Rate Limit (req/min)" type="number" value={String(editing.rate_limit || 100)} onChange={(v) => setEditing({ ...editing, rate_limit: Number(v) })} />
             <div className="flex items-center gap-2">
-              <input type="checkbox" checked={editing.is_active ?? true} onChange={(e) => setEditing({ ...editing, is_active: e.target.checked })} className="rounded bg-zinc-800 border-zinc-700 text-indigo-500" />
-              <span className="text-sm text-zinc-300">Active</span>
+              <input type="checkbox" checked={editing.is_active ?? true} onChange={(e) => setEditing({ ...editing, is_active: e.target.checked })} className="rounded bg-zinc-100 dark:bg-zinc-800 border-zinc-300 dark:border-zinc-700 text-indigo-500" />
+              <span className="text-sm text-zinc-300 dark:text-zinc-700 dark:text-zinc-300">Active</span>
             </div>
             <div className="flex gap-2 justify-end">
-              <button onClick={() => setEditing(null)} className="text-sm text-zinc-400 hover:text-zinc-200 px-3 py-1.5">Cancel</button>
+              <button onClick={() => setEditing(null)} className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 px-3 py-1.5">Cancel</button>
               <button onClick={handleSave} disabled={saving} className="bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 text-white text-xs font-medium rounded-lg px-4 py-2">
                 {saving ? "Saving..." : "Save"}
               </button>
@@ -115,9 +115,9 @@ export function PlansPage() {
 function Field({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (v: string) => void; type?: string }) {
   return (
     <div>
-      <label className="block text-xs text-zinc-400 mb-1">{label}</label>
+      <label className="block text-xs text-zinc-500 dark:text-zinc-400 mb-1">{label}</label>
       <input type={type} value={value} onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-100 focus:outline-none focus:border-indigo-500" />
+        className="w-full bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:border-indigo-500" />
     </div>
   );
 }

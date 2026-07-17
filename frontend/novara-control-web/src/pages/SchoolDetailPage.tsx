@@ -18,8 +18,8 @@ export function SchoolDetailPage({ schoolId, onBack }: SchoolDetailPageProps) {
   if (loading) {
     return (
       <div className="p-6 space-y-4">
-        <div className="h-8 w-48 bg-zinc-900 rounded-lg animate-pulse" />
-        <div className="h-32 bg-zinc-900 rounded-xl animate-pulse" />
+        <div className="h-8 w-48 bg-white dark:bg-zinc-900 rounded-lg animate-pulse" />
+        <div className="h-32 bg-white dark:bg-zinc-900 rounded-xl animate-pulse" />
       </div>
     );
   }
@@ -71,11 +71,11 @@ export function SchoolDetailPage({ schoolId, onBack }: SchoolDetailPageProps) {
 
   return (
     <div className="p-6 space-y-6">
-      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-zinc-400 hover:text-zinc-200">
+      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200">
         <ArrowLeft size={16} /> Back to Schools
       </button>
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5">
         <div className="flex items-start justify-between">
           <div>
             <h2 className="text-base font-medium">{school.name}</h2>
@@ -112,17 +112,17 @@ export function SchoolDetailPage({ schoolId, onBack }: SchoolDetailPageProps) {
       {newKey && (
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
           <p className="text-xs text-amber-400 font-medium mb-1">New API Key Generated</p>
-          <p className="text-xs text-zinc-400 mb-2">Copy this key now. It will not be shown again.</p>
-          <code className="block bg-zinc-800 rounded-lg px-3 py-2 text-xs font-mono text-zinc-200 break-all select-all">
+          <p className="text-xs text-zinc-500 dark:text-zinc-400 mb-2">Copy this key now. It will not be shown again.</p>
+          <code className="block bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2 text-xs font-mono text-zinc-800 dark:text-zinc-200 break-all select-all">
             {newKey}
           </code>
         </div>
       )}
 
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Key size={16} className="text-zinc-400" />
+            <Key size={16} className="text-zinc-500 dark:text-zinc-400" />
             <h3 className="text-sm font-medium">API Keys</h3>
           </div>
           <button
@@ -136,10 +136,10 @@ export function SchoolDetailPage({ schoolId, onBack }: SchoolDetailPageProps) {
         {apiKeys && apiKeys.length > 0 ? (
           <div className="space-y-2">
             {apiKeys.map((key: ApiKey) => (
-              <div key={key.id} className="flex items-center justify-between bg-zinc-800/50 rounded-lg px-3 py-2">
+              <div key={key.id} className="flex items-center justify-between bg-zinc-100 dark:bg-zinc-800/50 rounded-lg px-3 py-2">
                 <div>
-                  <code className="text-xs font-mono text-zinc-300">{key.key_prefix}...{key.key_display}</code>
-                  <div className="text-xs text-zinc-600 mt-0.5">
+                  <code className="text-xs font-mono text-zinc-300 dark:text-zinc-700 dark:text-zinc-300">{key.key_prefix}...{key.key_display}</code>
+                  <div className="text-xs text-zinc-400 dark:text-zinc-600 mt-0.5">
                     {key.scopes.join(", ")} &middot; {key.rate_limit} req/min
                     {key.last_used_at && ` &middot; Last used: ${key.last_used_at}`}
                   </div>
@@ -163,33 +163,33 @@ export function SchoolDetailPage({ schoolId, onBack }: SchoolDetailPageProps) {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-zinc-600">No API keys yet</p>
+          <p className="text-sm text-zinc-400 dark:text-zinc-600">No API keys yet</p>
         )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5">
           <div className="flex items-center gap-2 mb-3">
-            <Activity size={16} className="text-zinc-400" />
+            <Activity size={16} className="text-zinc-500 dark:text-zinc-400" />
             <h3 className="text-sm font-medium">Diagnostic Tools</h3>
           </div>
           <div className="space-y-2">
             {["Test DB Connection", "Ping API", "Check Cache", "Verify Keys"].map((tool) => (
               <button
                 key={tool}
-                className="w-full text-left text-sm text-zinc-400 hover:text-zinc-200 bg-zinc-800/50 hover:bg-zinc-800 rounded-lg px-3 py-2 transition-colors"
+                className="w-full text-left text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2 transition-colors"
               >
                 {tool}
               </button>
             ))}
           </div>
         </div>
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5">
           <div className="flex items-center gap-2 mb-3">
-            <AlertTriangle size={16} className="text-zinc-400" />
+            <AlertTriangle size={16} className="text-zinc-500 dark:text-zinc-400" />
             <h3 className="text-sm font-medium">Recent Activity</h3>
           </div>
-          <p className="text-sm text-zinc-600">No recent incidents</p>
+          <p className="text-sm text-zinc-400 dark:text-zinc-600">No recent incidents</p>
         </div>
       </div>
     </div>

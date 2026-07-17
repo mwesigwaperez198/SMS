@@ -47,9 +47,9 @@ export function PaymentsPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Receipt size={18} className="text-zinc-400" />
+          <Receipt size={18} className="text-zinc-500 dark:text-zinc-400" />
           <h2 className="text-sm font-medium">Registration Payments</h2>
-          <span className="text-xs text-zinc-600 bg-zinc-900 px-2 py-0.5 rounded-full">
+          <span className="text-xs text-zinc-400 dark:text-zinc-600 bg-white dark:bg-zinc-900 px-2 py-0.5 rounded-full">
             {registrations?.length ?? 0}
           </span>
         </div>
@@ -57,7 +57,7 @@ export function PaymentsPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300 outline-none"
+            className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-1.5 text-xs text-zinc-300 dark:text-zinc-700 dark:text-zinc-300 outline-none"
           >
             <option value="all">All Status</option>
             <option value="pending">Pending</option>
@@ -66,7 +66,7 @@ export function PaymentsPage() {
           </select>
           <button
             onClick={refresh}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 hover:bg-zinc-700 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg text-zinc-300 dark:text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
           >
             <RefreshCw size={13} />
           </button>
@@ -76,15 +76,15 @@ export function PaymentsPage() {
       {loading ? (
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-10 bg-zinc-900 rounded-xl animate-pulse" />
+            <div key={i} className="h-10 bg-white dark:bg-zinc-900 rounded-xl animate-pulse" />
           ))}
         </div>
       ) : (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-zinc-800 text-xs text-zinc-500 uppercase tracking-wider">
+                <tr className="border-b border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500 uppercase tracking-wider">
                   <th className="text-left px-4 py-3 font-medium">School</th>
                   <th className="text-left px-4 py-3 font-medium">Plan</th>
                   <th className="text-left px-4 py-3 font-medium">Method</th>
@@ -99,15 +99,15 @@ export function PaymentsPage() {
                   <tr
                     key={reg.id}
                     onClick={() => setSelectedReg(reg)}
-                    className="border-b border-zinc-800/50 hover:bg-zinc-800/30 cursor-pointer transition-colors"
+                    className="border-b border-zinc-200/50 dark:border-zinc-200 dark:border-zinc-800/50 hover:bg-zinc-100 dark:bg-zinc-800/30 cursor-pointer transition-colors"
                   >
                     <td className="px-4 py-3">
-                      <div className="font-medium text-zinc-100">{reg.school_name}</div>
+                      <div className="font-medium text-zinc-900 dark:text-zinc-100">{reg.school_name}</div>
                       <div className="text-xs text-zinc-500">{reg.admin_email}</div>
-                      {reg.admin_phone && <div className="text-xs text-zinc-600">{reg.admin_phone}</div>}
+                      {reg.admin_phone && <div className="text-xs text-zinc-400 dark:text-zinc-600">{reg.admin_phone}</div>}
                     </td>
-                    <td className="px-4 py-3 text-zinc-400 text-xs">{reg.plan_name || "N/A"}</td>
-                    <td className="px-4 py-3 text-zinc-400 text-xs">{methodLabel[reg.payment_method] || reg.payment_method}</td>
+                    <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400 text-xs">{reg.plan_name || "N/A"}</td>
+                    <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400 text-xs">{methodLabel[reg.payment_method] || reg.payment_method}</td>
                     <td className="px-4 py-3 text-zinc-500 text-xs font-mono max-w-[200px] truncate">{reg.payment_details}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium border ${statusColor[reg.status] || ""}`}>
@@ -136,7 +136,7 @@ export function PaymentsPage() {
                           </button>
                         </div>
                       ) : (
-                        <span className="text-xs text-zinc-600">
+                        <span className="text-xs text-zinc-400 dark:text-zinc-600">
                           {reg.status === "approved" ? "Provisioned" : "—"}
                         </span>
                       )}
@@ -146,9 +146,9 @@ export function PaymentsPage() {
                 {filtered.length === 0 && (
                   <tr>
                     <td colSpan={7} className="px-4 py-12 text-center">
-                      <Receipt size={32} className="text-zinc-700 mx-auto mb-2" />
-                      <p className="text-zinc-600 text-sm">No registration payments</p>
-                      <p className="text-zinc-700 text-xs mt-1">Payments will appear here when schools register</p>
+                      <Receipt size={32} className="text-zinc-300 dark:text-zinc-700 mx-auto mb-2" />
+                      <p className="text-zinc-400 dark:text-zinc-600 text-sm">No registration payments</p>
+                      <p className="text-zinc-300 dark:text-zinc-700 text-xs mt-1">Payments will appear here when schools register</p>
                     </td>
                   </tr>
                 )}
@@ -160,59 +160,59 @@ export function PaymentsPage() {
 
       {selectedReg && (
         <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setSelectedReg(null)}>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl w-full max-w-lg max-h-[85vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200 dark:border-zinc-800">
               <div className="flex items-center gap-2">
                 <Building2 size={18} className="text-blue-400" />
                 <h3 className="text-sm font-medium">Registration Profile</h3>
               </div>
-              <button onClick={() => setSelectedReg(null)} className="p-1 rounded-lg text-zinc-500 hover:text-zinc-300">
+              <button onClick={() => setSelectedReg(null)} className="p-1 rounded-lg text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 dark:text-zinc-700 dark:text-zinc-300">
                 <X size={18} />
               </button>
             </div>
 
             <div className="p-5 space-y-5">
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-zinc-600 font-medium mb-2">School Information</div>
-                <div className="bg-zinc-800/50 rounded-lg p-3 space-y-2 text-xs">
+                <div className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-600 font-medium mb-2">School Information</div>
+                <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-3 space-y-2 text-xs">
                   <div className="flex items-center gap-2">
                     <Building2 size={14} className="text-zinc-500 shrink-0" />
                     <span className="text-zinc-500 w-20">School</span>
-                    <span className="text-zinc-200 font-medium">{selectedReg.school_name}</span>
+                    <span className="text-zinc-800 dark:text-zinc-200 font-medium">{selectedReg.school_name}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <User size={14} className="text-zinc-500 shrink-0" />
                     <span className="text-zinc-500 w-20">Admin</span>
-                    <span className="text-zinc-200">{selectedReg.admin_name}</span>
+                    <span className="text-zinc-800 dark:text-zinc-200">{selectedReg.admin_name}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Mail size={14} className="text-zinc-500 shrink-0" />
                     <span className="text-zinc-500 w-20">Email</span>
-                    <span className="text-zinc-200">{selectedReg.admin_email}</span>
+                    <span className="text-zinc-800 dark:text-zinc-200">{selectedReg.admin_email}</span>
                   </div>
                   {selectedReg.admin_phone && (
                     <div className="flex items-center gap-2">
                       <Phone size={14} className="text-zinc-500 shrink-0" />
                       <span className="text-zinc-500 w-20">Phone</span>
-                      <span className="text-zinc-200">{selectedReg.admin_phone}</span>
+                      <span className="text-zinc-800 dark:text-zinc-200">{selectedReg.admin_phone}</span>
                     </div>
                   )}
                   <div className="flex items-center gap-2">
                     <FileText size={14} className="text-zinc-500 shrink-0" />
                     <span className="text-zinc-500 w-20">Plan</span>
-                    <span className="text-zinc-200">{selectedReg.plan_name}</span>
+                    <span className="text-zinc-800 dark:text-zinc-200">{selectedReg.plan_name}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock size={14} className="text-zinc-500 shrink-0" />
                     <span className="text-zinc-500 w-20">Date</span>
-                    <span className="text-zinc-200">{selectedReg.created_at ? new Date(selectedReg.created_at).toLocaleString() : "—"}</span>
+                    <span className="text-zinc-800 dark:text-zinc-200">{selectedReg.created_at ? new Date(selectedReg.created_at).toLocaleString() : "—"}</span>
                   </div>
                 </div>
               </div>
 
               <div>
-                <div className="text-[10px] uppercase tracking-wider text-zinc-600 font-medium mb-2">Payment</div>
-                <div className="bg-zinc-800/50 rounded-lg p-3 space-y-2 text-xs">
+                <div className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-600 font-medium mb-2">Payment</div>
+                <div className="bg-zinc-100 dark:bg-zinc-800/50 rounded-lg p-3 space-y-2 text-xs">
                   <div className="flex items-center gap-2">
                     {selectedReg.payment_method?.includes("mobile") ? (
                       <Smartphone size={14} className="text-amber-400 shrink-0" />
@@ -220,14 +220,14 @@ export function PaymentsPage() {
                       <Landmark size={14} className="text-blue-400 shrink-0" />
                     )}
                     <span className="text-zinc-500 w-20">Method</span>
-                    <span className="text-zinc-200 font-medium">{methodLabel[selectedReg.payment_method] || selectedReg.payment_method || "Not specified"}</span>
+                    <span className="text-zinc-800 dark:text-zinc-200 font-medium">{methodLabel[selectedReg.payment_method] || selectedReg.payment_method || "Not specified"}</span>
                   </div>
                   {selectedReg.payment_details && (
                     <div className="flex items-center gap-2">
                       <FileText size={14} className="text-zinc-500 shrink-0" />
                       <span className="text-zinc-500 w-20">Ref / Txn</span>
-                      <span className="text-zinc-200 font-mono">{selectedReg.payment_details}</span>
-                      <button onClick={() => copyText(selectedReg.payment_details)} className="p-0.5 text-zinc-500 hover:text-zinc-300">
+                      <span className="text-zinc-800 dark:text-zinc-200 font-mono">{selectedReg.payment_details}</span>
+                      <button onClick={() => copyText(selectedReg.payment_details)} className="p-0.5 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 dark:text-zinc-700 dark:text-zinc-300">
                         {copied ? <CheckCircle2 size={12} className="text-emerald-400" /> : <Copy size={12} />}
                       </button>
                     </div>
@@ -242,8 +242,8 @@ export function PaymentsPage() {
               </div>
             </div>
 
-            <div className="px-5 py-4 border-t border-zinc-800 flex justify-end">
-              <button onClick={() => setSelectedReg(null)} className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-medium rounded-lg px-4 py-2 transition-colors">
+            <div className="px-5 py-4 border-t border-zinc-200 dark:border-zinc-800 flex justify-end">
+              <button onClick={() => setSelectedReg(null)} className="bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-300 dark:text-zinc-700 dark:text-zinc-300 text-xs font-medium rounded-lg px-4 py-2 transition-colors">
                 Close
               </button>
             </div>

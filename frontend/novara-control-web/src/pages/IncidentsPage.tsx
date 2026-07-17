@@ -15,28 +15,28 @@ export function IncidentsPage() {
     open: "bg-red-500/10 text-red-400",
     investigating: "bg-amber-500/10 text-amber-400",
     resolved: "bg-emerald-500/10 text-emerald-400",
-    closed: "bg-zinc-500/10 text-zinc-400",
+    closed: "bg-zinc-500/10 text-zinc-500 dark:text-zinc-400",
   };
 
   return (
     <div className="p-6 space-y-4">
       <div className="flex items-center gap-2">
-        <AlertTriangle size={18} className="text-zinc-400" />
+        <AlertTriangle size={18} className="text-zinc-500 dark:text-zinc-400" />
         <h2 className="text-sm font-medium">Incidents</h2>
       </div>
 
       {loading ? (
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-10 bg-zinc-900 rounded-xl animate-pulse" />
+            <div key={i} className="h-10 bg-white dark:bg-zinc-900 rounded-xl animate-pulse" />
           ))}
         </div>
       ) : (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-zinc-800 text-xs text-zinc-500 uppercase tracking-wider">
+                <tr className="border-b border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500 uppercase tracking-wider">
                   <th className="text-left px-4 py-3 font-medium">School</th>
                   <th className="text-left px-4 py-3 font-medium">Title</th>
                   <th className="text-left px-4 py-3 font-medium">Severity</th>
@@ -47,9 +47,9 @@ export function IncidentsPage() {
               </thead>
               <tbody>
                 {(incidents ?? []).map((inc) => (
-                  <tr key={inc.id} className="border-b border-zinc-800/50">
+                  <tr key={inc.id} className="border-b border-zinc-200/50 dark:border-zinc-200 dark:border-zinc-800/50">
                     <td className="px-4 py-3 font-medium">{inc.school_name}</td>
-                    <td className="px-4 py-3 text-zinc-300">{inc.title}</td>
+                    <td className="px-4 py-3 text-zinc-300 dark:text-zinc-700 dark:text-zinc-300">{inc.title}</td>
                     <td className="px-4 py-3">
                       <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${severityColor[inc.severity] || ""}`}>
                         {inc.severity}
@@ -66,7 +66,7 @@ export function IncidentsPage() {
                 ))}
                 {(incidents ?? []).length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-zinc-600 text-sm">No incidents</td>
+                    <td colSpan={6} className="px-4 py-8 text-center text-zinc-400 dark:text-zinc-600 text-sm">No incidents</td>
                   </tr>
                 )}
               </tbody>

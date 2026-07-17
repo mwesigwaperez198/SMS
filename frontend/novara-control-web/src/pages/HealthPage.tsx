@@ -17,12 +17,12 @@ export function HealthPage() {
     <div className="p-6 space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Activity size={18} className="text-zinc-400" />
+          <Activity size={18} className="text-zinc-500 dark:text-zinc-400" />
           <h2 className="text-sm font-medium">System Health</h2>
         </div>
         <button
           onClick={refresh}
-          className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1.5"
+          className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-1.5"
         >
           <RotateCcw size={14} /> Refresh
         </button>
@@ -31,14 +31,14 @@ export function HealthPage() {
       {loading ? (
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-14 bg-zinc-900 rounded-xl animate-pulse" />
+            <div key={i} className="h-14 bg-white dark:bg-zinc-900 rounded-xl animate-pulse" />
           ))}
         </div>
       ) : (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+        <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-zinc-800 text-xs text-zinc-500 uppercase tracking-wider">
+              <tr className="border-b border-zinc-200 dark:border-zinc-800 text-xs text-zinc-500 uppercase tracking-wider">
                 <th className="text-left px-4 py-3 font-medium">Service</th>
                 <th className="text-left px-4 py-3 font-medium">Status</th>
                 <th className="text-left px-4 py-3 font-medium">Latency</th>
@@ -47,7 +47,7 @@ export function HealthPage() {
             </thead>
             <tbody>
               {(checks ?? []).map((check) => (
-                <tr key={check.service_name} className="border-b border-zinc-800/50">
+                <tr key={check.service_name} className="border-b border-zinc-200/50 dark:border-zinc-200 dark:border-zinc-800/50">
                   <td className="px-4 py-3 font-medium">{check.service_name}</td>
                   <td className="px-4 py-3">
                     <span className="flex items-center gap-2">
@@ -58,7 +58,7 @@ export function HealthPage() {
                       }>{check.status}</span>
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-zinc-400">{check.latency_ms}ms</td>
+                  <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400">{check.latency_ms}ms</td>
                   <td className="px-4 py-3 text-zinc-500 text-xs hidden sm:table-cell">{check.checked_at}</td>
                 </tr>
               ))}

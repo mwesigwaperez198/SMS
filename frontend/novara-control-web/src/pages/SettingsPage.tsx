@@ -97,10 +97,10 @@ export function SettingsPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Settings size={18} className="text-zinc-400" />
+          <Settings size={18} className="text-zinc-500 dark:text-zinc-400" />
           <h2 className="text-sm font-medium">System Control</h2>
         </div>
-        <button onClick={loadData} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-300 hover:bg-zinc-700 transition-colors">
+        <button onClick={loadData} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors">
           <RefreshCw size={13} /> Refresh
         </button>
       </div>
@@ -139,15 +139,15 @@ export function SettingsPage() {
       {/* Quick Stats */}
       {status && (
         <div className="grid grid-cols-3 gap-4">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
-            <div className="text-2xl font-bold text-zinc-100">{status.total_schools}</div>
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 text-center">
+            <div className="text-2xl font-bold text-zinc-900 dark:text-zinc-100">{status.total_schools}</div>
             <div className="text-xs text-zinc-500 mt-1">Total Schools</div>
           </div>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 text-center">
             <div className="text-2xl font-bold text-emerald-400">{status.active_schools}</div>
             <div className="text-xs text-zinc-500 mt-1">Active Schools</div>
           </div>
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-center">
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 text-center">
             <div className="text-2xl font-bold text-blue-400">{status.total_users}</div>
             <div className="text-xs text-zinc-500 mt-1">Total Users</div>
           </div>
@@ -155,7 +155,7 @@ export function SettingsPage() {
       )}
 
       {/* Run System Check */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-4">
         <div className="flex items-center gap-2">
           <Zap size={16} className="text-amber-400" />
           <h3 className="text-sm font-medium">System Check</h3>
@@ -178,14 +178,14 @@ export function SettingsPage() {
             {running ? <RefreshCw size={14} className="animate-spin" /> : <Play size={14} />}
             {running ? "Triggering..." : "Run System Check"}
           </button>
-          <span className="text-xs text-zinc-600">
+          <span className="text-xs text-zinc-400 dark:text-zinc-600">
             Notifies all users + runs at midnight
           </span>
         </div>
       </div>
 
       {/* Maintenance Mode */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-4">
         <div className="flex items-center gap-2">
           <Power size={16} className={maintenance ? "text-red-400" : "text-emerald-400"} />
           <h3 className="text-sm font-medium">Maintenance Mode</h3>
@@ -221,9 +221,9 @@ export function SettingsPage() {
       </div>
 
       {/* Recent System Checks */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-3">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-3">
         <div className="flex items-center gap-2">
-          <Clock size={16} className="text-zinc-400" />
+          <Clock size={16} className="text-zinc-500 dark:text-zinc-400" />
           <h3 className="text-sm font-medium">Recent System Checks</h3>
         </div>
         {loading ? (
@@ -233,7 +233,7 @@ export function SettingsPage() {
         ) : (
           <div className="space-y-2">
             {checks.map(c => (
-              <div key={c.id} className="flex items-center justify-between py-2 px-3 bg-zinc-800/50 rounded-lg">
+              <div key={c.id} className="flex items-center justify-between py-2 px-3 bg-zinc-100 dark:bg-zinc-800/50 rounded-lg">
                 <div className="flex items-center gap-2">
                   {c.status === "completed" ? (
                     <CheckCircle2 size={14} className="text-emerald-400" />
@@ -243,14 +243,14 @@ export function SettingsPage() {
                     <Clock size={14} className="text-zinc-500" />
                   )}
                   <div>
-                    <span className="text-xs text-zinc-300 capitalize">{c.status}</span>
+                    <span className="text-xs text-zinc-700 dark:text-zinc-300 capitalize">{c.status}</span>
                     {c.triggered_by_name && (
                       <span className="text-xs text-zinc-500 ml-2">by {c.triggered_by_name}</span>
                     )}
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="text-xs text-zinc-400">{new Date(c.scheduled_for).toLocaleString()}</div>
+                  <div className="text-xs text-zinc-500 dark:text-zinc-400">{new Date(c.scheduled_for).toLocaleString()}</div>
                   {c.summary && (
                     <div className="text-xs text-zinc-500">{c.summary}</div>
                   )}
@@ -262,21 +262,21 @@ export function SettingsPage() {
       </div>
 
       {/* Security */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-4">
         <div className="flex items-center gap-2">
-          <Shield size={16} className="text-zinc-400" />
+          <Shield size={16} className="text-zinc-500 dark:text-zinc-400" />
           <h3 className="text-sm font-medium">Security</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Label label="JWT Secret Rotation">
-            <select className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-300 outline-none w-full">
+            <select className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none w-full">
               <option>Every 30 days</option>
               <option>Every 60 days</option>
               <option>Every 90 days</option>
             </select>
           </Label>
           <Label label="Session Timeout">
-            <select className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-300 outline-none w-full">
+            <select className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none w-full">
               <option>1 hour</option>
               <option>4 hours</option>
               <option>8 hours</option>
@@ -287,21 +287,21 @@ export function SettingsPage() {
       </div>
 
       {/* Notifications */}
-      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-5 space-y-4">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5 space-y-4">
         <div className="flex items-center gap-2">
-          <Bell size={16} className="text-zinc-400" />
+          <Bell size={16} className="text-zinc-500 dark:text-zinc-400" />
           <h3 className="text-sm font-medium">Notifications</h3>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Label label="Critical Alerts">
-            <select className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-300 outline-none w-full">
+            <select className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none w-full">
               <option>Email + SMS</option>
               <option>Email only</option>
               <option>Disabled</option>
             </select>
           </Label>
           <Label label="Weekly Report">
-            <select className="bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-300 outline-none w-full">
+            <select className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none w-full">
               <option>Enabled</option>
               <option>Disabled</option>
             </select>
