@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import func as sa_func
+from sqlalchemy import func as sa_func, text
 from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_current_user, role_required
@@ -512,33 +512,117 @@ class TriggerSystemCheckResponse(BaseModel):
     message: str
 
 
+def _execute_system_check(check_id: int):
+    """Background task that runs the actual system checks."""
+    import time
+    from app.db.session import SessionMaker
+
+    db = SessionMaker()
+    try:
+        check = db.get(SystemCheck, check_id)
+        if not check:
+            return
+        check.status = "running"
+        check.started_at = datetime.now(timezone.utc)
+        db.commit()
+
+        results = {}
+        now = datetime.now(timezone.utc)
+
+        start = time.time()
+        try:
+            db.execute(text("SELECT 1"))
+            results["database"] = {"status": "ok", "latency_ms": int((time.time() - start) * 1000)}
+        except Exception as e:
+            results["database"] = {"status": "error", "error": str(e)[:200]}
+
+        total_users = db.execute(text("SELECT COUNT(*) FROM users")).scalar() or 0
+        active_users = db.execute(text("SELECT COUNT(*) FROM users WHERE is_active = true")).scalar() or 0
+        total_schools = db.execute(text("SELECT COUNT(*) FROM schools")).scalar() or 0
+        active_schools = db.execute(
+            text("SELECT COUNT(*) FROM schools WHERE subscription_status = 'active'")
+        ).scalar() or 0
+        total_students = db.execute(text("SELECT COUNT(*) FROM students")).scalar() or 0
+
+        expired_subs = db.execute(text("""
+            SELECT COUNT(*) FROM school_subscriptions
+            WHERE status = 'active' AND expires_at < :now
+        """), {"now": now}).scalar() or 0
+
+        locked_users = db.execute(text("""
+            SELECT COUNT(*) FROM users
+            WHERE locked_until IS NOT NULL AND locked_until > :now
+        """), {"now": now}).scalar() or 0
+
+        pending_reg = db.execute(text(
+            "SELECT COUNT(*) FROM registration_requests WHERE status = 'pending'"
+        )).scalar() or 0
+
+        results["counts"] = {
+            "total_users": total_users,
+            "active_users": active_users,
+            "total_schools": total_schools,
+            "active_schools": active_schools,
+            "total_students": total_students,
+            "expired_subscriptions": expired_subs,
+            "locked_accounts": locked_users,
+            "pending_registrations": pending_reg,
+        }
+
+        issues = []
+        if expired_subs > 0:
+            issues.append(f"{expired_subs} schools have expired subscriptions")
+        if locked_users > 0:
+            issues.append(f"{locked_users} user accounts are currently locked")
+        if active_schools < total_schools * 0.5 and total_schools > 0:
+            issues.append(f"Less than half of schools are active ({active_schools}/{total_schools})")
+
+        check.status = "completed"
+        check.completed_at = datetime.now(timezone.utc)
+        check.results = results
+        check.summary = "System check completed." + (f" {len(issues)} issue(s) found." if issues else " No issues found.")
+        db.commit()
+
+    except Exception as e:
+        try:
+            check = db.get(SystemCheck, check_id)
+            if check:
+                check.status = "failed"
+                check.completed_at = datetime.now(timezone.utc)
+                check.error = str(e)[:1000]
+                db.commit()
+        except Exception:
+            pass
+    finally:
+        db.close()
+
+
 @router.post("/system-check/trigger", response_model=TriggerSystemCheckResponse)
 def trigger_system_check(
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(role_required(RoleId.SUPER_ADMIN)),
 ):
-    from datetime import timedelta
     now = datetime.now(timezone.utc)
-    tomorrow = now.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
 
     existing = db.query(SystemCheck).filter(
-        SystemCheck.status.in_(["scheduled", "running"]),
-        SystemCheck.scheduled_for > now,
+        SystemCheck.status.in_(["running", "scheduled"]),
     ).first()
     if existing:
         raise HTTPException(
             status_code=409,
-            detail=f"A system check is already scheduled for {existing.scheduled_for.strftime('%Y-%m-%d %H:%M UTC')}",
+            detail=f"A system check is already in progress (status: {existing.status})",
         )
 
     check = SystemCheck(
         triggered_by_id=current_user.id,
         status="scheduled",
-        scheduled_for=tomorrow,
+        scheduled_for=now,
     )
     db.add(check)
     db.flush()
+    check_id = check.id
+    db.commit()
 
     schools = db.query(School).filter(School.subscription_status.in_(["active", "trial"])).all()
     notified = 0
@@ -551,20 +635,14 @@ def trigger_system_check(
         for admin in admins:
             try:
                 from app.services.email_service import send_email
-
                 send_email(
                     to=admin.email,
-                    subject="System Maintenance Scheduled Tonight at Midnight",
+                    subject="System Check In Progress",
                     html=f"""
                     <div style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;background:#0f172a;color:#f1f5f9;border-radius:12px;">
-                        <h2 style="color:#667eea;">Scheduled System Maintenance</h2>
-                        <p>A comprehensive system check has been scheduled.</p>
-                        <div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:16px;margin:16px 0;">
-                            <p><strong>Scheduled Time:</strong> Tonight at midnight ({tomorrow.strftime('%Y-%m-%d %H:%M UTC')})</p>
-                            <p><strong>School:</strong> {school.name}</p>
-                        </div>
-                        <p style="color:#f59e0b;font-weight:600;">During the maintenance window, the system will be temporarily unavailable.</p>
-                        <p style="color:#94a3b8;font-size:0.85rem;">All operations will resume automatically once the check completes. The estimated duration depends on the number of users and records in the system.</p>
+                        <h2 style="color:#667eea;">System Check In Progress</h2>
+                        <p>A system-wide health check is now running. You may experience brief delays.</p>
+                        <p style="color:#94a3b8;font-size:0.85rem;">The system will resume normal operation once the check completes.</p>
                     </div>
                     """,
                 )
@@ -572,31 +650,14 @@ def trigger_system_check(
             except Exception:
                 pass
 
-    from app.models.notification import Notification
+    background_tasks.add_task(_execute_system_check, check_id)
 
-    for school in schools:
-        admins = db.query(User).filter(
-            User.school_id == school.id,
-            User.role_id.in_([RoleId.ADMIN, RoleId.ICT_ADMIN]),
-            User.is_active == True,
-        ).all()
-        for admin in admins:
-            db.add(Notification(
-                school_id=school.id,
-                user_id=admin.id,
-                sender_id=current_user.id,
-                type="system_maintenance",
-                title="System Check Scheduled",
-                message="A system-wide check has been scheduled for tonight at midnight. The system will be briefly unavailable.",
-            ))
-
-    log_action(db, current_user=current_user, action="system_check_triggered", entity_type="system_check", entity_id=check.id)
-    db.commit()
+    log_action(db, current_user=current_user, action="system_check_triggered", entity_type="system_check", entity_id=check_id)
 
     return TriggerSystemCheckResponse(
-        id=check.id,
-        scheduled_for=tomorrow,
-        message=f"System check scheduled for midnight ({tomorrow.strftime('%Y-%m-%d %H:%M UTC')}). {notified} administrators notified.",
+        id=check_id,
+        scheduled_for=now,
+        message=f"System check started. {notified} administrators notified.",
     )
 
 

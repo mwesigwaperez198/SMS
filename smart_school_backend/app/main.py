@@ -145,7 +145,36 @@ def create_app() -> FastAPI:
     )
 
     @app.middleware("http")
-    async def security_headers(request: Request, call_next) -> Response:
+    async def maintenance_and_security(request: Request, call_next) -> Response:
+        path = request.url.path
+        allowed_during_maintenance = (
+            path.startswith("/api/health")
+            or path.startswith("/api/v1/auth/login")
+            or path.startswith("/api/v1/auth/refresh-token")
+            or path.startswith("/api/v1/novara/")
+            or path.startswith("/novara/")
+            or path == "/docs"
+            or path == "/openapi.json"
+        )
+        if not allowed_during_maintenance:
+            try:
+                from sqlalchemy import text
+                with _engine.connect() as conn:
+                    row = conn.execute(
+                        text("SELECT value FROM system_settings WHERE key = 'maintenance_mode'")
+                    ).one_or_none()
+                    if row and row[0] == "true":
+                        from fastapi.responses import JSONResponse
+                        return JSONResponse(
+                            status_code=503,
+                            content={
+                                "detail": "System is currently under maintenance. Please try again later.",
+                                "maintenance": True,
+                            },
+                        )
+            except Exception:
+                pass
+
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
