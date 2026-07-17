@@ -1,6 +1,7 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Users, UserPlus, FileText, Upload, Search, Download, X } from "lucide-react";
-import type { ConnectedData } from "../api";
+import type { ConnectedData, GuardianInfo } from "../api";
+import { fetchSecretaryGuardianList } from "../api";
 import { printElement } from "../utils/exportUtils";
 
 interface SecretaryWorkspaceProps {
@@ -44,15 +45,25 @@ export function SecretaryWorkspace({ view, data, onViewChange }: SecretaryWorksp
     s.className?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Build guardian-child map from student data
-  const guardianMap = new Map<string, { guardian: string; children: typeof data.students }>();
-  data.students.forEach(s => {
-    const key = s.guardian ?? "Unknown";
-    if (!guardianMap.has(key)) guardianMap.set(key, { guardian: key, children: [] });
-    guardianMap.get(key)!.children.push(s);
-  });
-  const guardianList = Array.from(guardianMap.values()).filter(g =>
-    !search || g.guardian.toLowerCase().includes(search.toLowerCase())
+  // Fetch real guardian list from API
+  const [guardians, setGuardians] = useState<GuardianInfo[]>([]);
+  const [guardiansLoading, setGuardiansLoading] = useState(false);
+
+  useEffect(() => {
+    if (view === "Guardians" && guardians.length === 0 && !guardiansLoading) {
+      setGuardiansLoading(true);
+      fetchSecretaryGuardianList()
+        .then((list: GuardianInfo[]) => setGuardians(list))
+        .catch(() => {})
+        .finally(() => setGuardiansLoading(false));
+    }
+  }, [view, guardians.length, guardiansLoading]);
+
+  const filteredGuardians = guardians.filter(g =>
+    !search ||
+    g.name?.toLowerCase().includes(search.toLowerCase()) ||
+    g.student_name?.toLowerCase().includes(search.toLowerCase()) ||
+    g.email?.toLowerCase().includes(search.toLowerCase())
   );
 
   // ---------- Import Students ----------
@@ -283,38 +294,30 @@ export function SecretaryWorkspace({ view, data, onViewChange }: SecretaryWorksp
       <div className="content-grid">
         <div className="table-panel">
           <div className="office-filters">
-            <label><Search size={15}/><input placeholder="Search guardian name…" value={search} onChange={e => setSearch(e.target.value)} /></label>
-            <span style={{fontSize:"0.82rem",color:"var(--muted)"}}>{guardianList.length} guardians</span>
+            <label><Search size={15}/><input placeholder="Search guardian name, student, email…" value={search} onChange={e => setSearch(e.target.value)} /></label>
+            <span style={{fontSize:"0.82rem",color:"var(--muted)"}}>{filteredGuardians.length} guardians</span>
           </div>
-          <div style={{display:"grid",gap:12,padding:16}}>
-            {guardianList.map(g => (
-              <div key={g.guardian} className="import-file-card">
-                <div className="panel-title" style={{padding:"10px 12px"}}>
-                  <div>
-                    <strong style={{fontSize:"0.9rem"}}>{g.guardian}</strong>
-                    <span style={{fontSize:"0.78rem",color:"var(--muted)",marginLeft:10}}>{g.children.length} {g.children.length === 1 ? "child" : "children"}</span>
-                  </div>
-                </div>
-                <div className="table-wrap">
-                  <table>
-                    <thead><tr><th>Adm No</th><th>Student Name</th><th>Gender</th><th>Class</th><th>Status</th></tr></thead>
-                    <tbody>
-                      {g.children.map(c => (
-                        <tr key={c.admissionNo}>
-                          <td><code>{c.admissionNo}</code></td>
-                          <td><strong>{c.name}</strong></td>
-                          <td>{c.gender}</td>
-                          <td>{c.className}</td>
-                          <td><span className={`badge ${c.status === "Active" ? "success" : "warning"}`}>{c.status}</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ))}
-            {guardianList.length === 0 && <div className="empty-state">No guardians found</div>}
-          </div>
+          {guardiansLoading ? (
+            <div className="empty-state" style={{padding:32}}>Loading guardians…</div>
+          ) : (
+            <div id="export-guardians" className="table-wrap">
+              <table>
+                <thead><tr><th>Guardian Name</th><th>Email</th><th>Phone</th><th>Student</th><th>Relationship</th></tr></thead>
+                <tbody>
+                  {filteredGuardians.map(g => (
+                    <tr key={g.id}>
+                      <td><strong>{g.name}</strong></td>
+                      <td>{g.email || "—"}</td>
+                      <td>{g.phone || "—"}</td>
+                      <td>{g.student_name}</td>
+                      <td>{g.relationship || "—"}</td>
+                    </tr>
+                  ))}
+                  {filteredGuardians.length === 0 && <tr><td colSpan={5} className="empty-state">No guardians found</td></tr>}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     );

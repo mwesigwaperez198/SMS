@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { LibraryBig, Upload, BookOpen, Package, AlertCircle, Search, Plus, RotateCcw, FileText, Users } from "lucide-react";
 import type { ConnectedData } from "../api";
+import { fetchLibrarianActiveBorrows, fetchLibrarianOverdue } from "../api";
 import { printElement } from "../utils/exportUtils";
 
 interface LibrarianWorkspaceProps {
@@ -27,7 +28,20 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
   const [addForm, setAddForm] = useState({ title:"", author:"", subject:"", shelf:"", isbn:"", copies:"1" });
   const [requestForm, setRequestForm] = useState({ title:"", author:"", subject:"", reason:"" });
   const [requestMsg, setRequestMsg] = useState("");
-  const [overdueLoans, setOverdueLoans] = useState<{ code:string; title:string; student:string; dueDate:string; daysOverdue:number }[]>([]);
+  const [activeBorrows, setActiveBorrows] = useState<any[]>([]);
+  const [overdueBooks, setOverdueBooks] = useState<{ title:string; borrower_name:string; due_date:string; daysOverdue:number }[]>([]);
+
+  useEffect(() => {
+    fetchLibrarianActiveBorrows().then(setActiveBorrows).catch(() => {});
+    fetchLibrarianOverdue().then((rows) => {
+      const today = new Date();
+      setOverdueBooks(rows.map((r: any) => {
+        const due = new Date(r.due_date);
+        const diff = Math.ceil((today.getTime() - due.getTime()) / 86400000);
+        return { title: r.book_title, borrower_name: r.borrower_name, due_date: r.due_date, daysOverdue: diff > 0 ? diff : 0 };
+      }));
+    }).catch(() => {});
+  }, []);
 
   const books = data.libraryBooks;
   const filtered = books.filter(b =>
@@ -140,15 +154,7 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
     );
   }
 
-  const overdueCount = overdueLoans.length;
-
-  const mockOverdue = () => {
-    setOverdueLoans([
-      { code:"BK-ENG-0045", title:"English Grammar", student:"Akankunda Joan", dueDate:"2026-06-20", daysOverdue:18 },
-      { code:"BK-MAT-0112", title:"Mathematics Today", student:"Mugisha Ivan", dueDate:"2026-06-25", daysOverdue:13 },
-      { code:"BK-SCI-0028", title:"Basic Science", student:"Nakimuli Grace", dueDate:"2026-07-01", daysOverdue:7 },
-    ]);
-  };
+  const overdueCount = overdueBooks.length;
 
   if (view === "Issue & Return") {
     return (
@@ -196,14 +202,14 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
               <strong style={{fontSize:"0.9rem"}}>Active Loans</strong>
             </div>
             <div className="stack-list">
-              {books.filter(b => (b.borrowed ?? 0) > 0).slice(0,5).map(b => (
-                <div key={b.code} className="list-row">
+              {activeBorrows.slice(0,5).map((b) => (
+                <div key={b.id} className="list-row">
                   <div className="dot" />
-                  <div><strong style={{fontSize:"0.88rem"}}>{b.title}</strong><br/><span style={{fontSize:"0.78rem",color:"var(--muted)"}}>{b.code}</span></div>
-                  <span className="badge warning">{b.borrowed} out</span>
+                  <div><strong style={{fontSize:"0.88rem"}}>{b.book_title}</strong><br/><span style={{fontSize:"0.78rem",color:"var(--muted)"}}>{b.borrower_name} · due {b.due_date}</span></div>
+                  <span className="badge warning">{b.status}</span>
                 </div>
               ))}
-              {books.filter(b => (b.borrowed ?? 0) > 0).length === 0 && <p className="empty-state">No active loans</p>}
+              {activeBorrows.length === 0 && <p className="empty-state">No active loans</p>}
             </div>
           </div>
         </div>
@@ -212,25 +218,23 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
         <div className="list-panel">
           <div className="panel-title">
             <strong style={{fontSize:"0.9rem"}}>Overdue Books</strong>
-            <button className="tool-button" onClick={mockOverdue} style={{minHeight:28,fontSize:"0.8rem"}}>Refresh</button>
           </div>
           <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>Code</th><th>Title</th><th>Borrower</th><th>Due Date</th><th>Overdue</th><th>Action</th></tr>
+                <tr><th>Title</th><th>Borrower</th><th>Due Date</th><th>Overdue</th><th>Action</th></tr>
               </thead>
               <tbody>
-                {overdueLoans.map((o, i) => (
+                {overdueBooks.map((o, i) => (
                   <tr key={i}>
-                    <td><code>{o.code}</code></td>
                     <td>{o.title}</td>
-                    <td>{o.student}</td>
-                    <td>{o.dueDate}</td>
+                    <td>{o.borrower_name}</td>
+                    <td>{o.due_date}</td>
                     <td><span className="badge error">{o.daysOverdue} days</span></td>
                     <td><button className="tool-button" style={{minHeight:26,fontSize:"0.78rem"}}>Notify</button></td>
                   </tr>
                 ))}
-                {overdueLoans.length === 0 && <tr><td colSpan={6} className="empty-state">No overdue books</td></tr>}
+                {overdueBooks.length === 0 && <tr><td colSpan={5} className="empty-state">No overdue books</td></tr>}
               </tbody>
             </table>
           </div>
@@ -377,7 +381,6 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
       </div>
       <div className="notice-strip" style={{display:"flex",gap:8,alignItems:"center",justifyContent:"space-between"}}>
         <span>Select a view from the sidebar — Catalog, Issue &amp; Return, Book Requests, Upload to Students, or Reports.</span>
-        <button className="tool-button" onClick={mockOverdue} style={{minHeight:28,fontSize:"0.8rem"}}><AlertCircle size={13} />Check Overdue</button>
       </div>
     </div>
   );
