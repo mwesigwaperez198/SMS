@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { LibraryBig, Upload, BookOpen, Package, AlertCircle, Search, Plus, RotateCcw, FileText, Users } from "lucide-react";
 import type { ConnectedData } from "../api";
-import { fetchLibrarianActiveBorrows, fetchLibrarianOverdue } from "../api";
+import { fetchLibrarianActiveBorrows, fetchLibrarianOverdue, issueBook, returnBook, addLibraryBook, submitBookRequest } from "../api";
 import { printElement } from "../utils/exportUtils";
 
 interface LibrarianWorkspaceProps {
@@ -16,6 +16,7 @@ const CLASSES = ["P4","P5","P6","P7","S1","S2","S3","S4","S5","S6"];
 export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: LibrarianWorkspaceProps) {
   const [search, setSearch] = useState("");
   const [issueStudent, setIssueStudent] = useState("");
+  const [issueStudentId, setIssueStudentId] = useState<number | null>(null);
   const [issueCode, setIssueCode] = useState("");
   const [issueDue, setIssueDue] = useState("");
   const [returnCode, setReturnCode] = useState("");
@@ -30,6 +31,10 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
   const [requestMsg, setRequestMsg] = useState("");
   const [activeBorrows, setActiveBorrows] = useState<any[]>([]);
   const [overdueBooks, setOverdueBooks] = useState<{ title:string; borrower_name:string; due_date:string; daysOverdue:number }[]>([]);
+  const [issueLoading, setIssueLoading] = useState(false);
+  const [returnLoading, setReturnLoading] = useState(false);
+  const [addBookMsg, setAddBookMsg] = useState("");
+  const [addBookLoading, setAddBookLoading] = useState(false);
 
   useEffect(() => {
     fetchLibrarianActiveBorrows().then(setActiveBorrows).catch(() => {});
@@ -38,24 +43,98 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
       setOverdueBooks(rows.map((r: any) => {
         const due = new Date(r.due_date);
         const diff = Math.ceil((today.getTime() - due.getTime()) / 86400000);
-        return { title: r.book_title, borrower_name: r.borrower_name, due_date: r.due_date, daysOverdue: diff > 0 ? diff : 0 };
+        return { title: r.book_title, borrower_name: r.borrower_name, due_date: r.due_date?.split("T")[0] ?? "", daysOverdue: diff > 0 ? diff : 0 };
       }));
     }).catch(() => {});
   }, []);
 
-  const books = data.libraryBooks;
-  const filtered = books.filter(b =>
-    !search || b.title.toLowerCase().includes(search.toLowerCase()) ||
-    b.code?.toLowerCase().includes(search.toLowerCase())
-  );
-  const totalAvailable = books.reduce((s, b) => s + (b.available ?? 0), 0);
-  const totalBorrowed = books.reduce((s, b) => s + (b.borrowed ?? 0), 0);
-  const pendingRequests = data.requestedBooks.filter(r => r.status === "Pending Approval");
+  const handleIssueStudentSearch = (val: string) => {
+    setIssueStudent(val);
+    setIssueStudentId(null);
+    if (val.length < 2) return;
+    const match = data.students.find(s =>
+      s.name?.toLowerCase().includes(val.toLowerCase()) ||
+      s.admissionNo?.toLowerCase().includes(val.toLowerCase())
+    );
+    if (match && match.userId) setIssueStudentId(match.userId);
+  };
 
-  const handleIssue = () => {
-    if (!issueStudent || !issueCode || !issueDue) { setIssueMsg("Fill all fields"); return; }
-    setIssueMsg("✓ Book issued successfully");
-    setIssueStudent(""); setIssueCode(""); setIssueDue("");
+  const handleIssue = async () => {
+    if (!issueStudentId || !issueCode || !issueDue) { setIssueMsg("Fill all fields (student must have a user account)"); return; }
+    setIssueLoading(true);
+    try {
+      await issueBook({
+        book_id: Number(issueCode),
+        borrower_id: issueStudentId,
+        due_date: new Date(issueDue).toISOString(),
+      });
+      setIssueMsg("✓ Book issued successfully");
+      setIssueStudent(""); setIssueCode(""); setIssueDue(""); setIssueStudentId(null);
+      const fresh = await fetchLibrarianActiveBorrows();
+      setActiveBorrows(fresh);
+    } catch (err: any) {
+      setIssueMsg(err?.message || "Failed to issue book");
+    } finally {
+      setIssueLoading(false);
+      setTimeout(() => setIssueMsg(""), 4000);
+    }
+  };
+
+  const handleReturn = async () => {
+    if (!returnCode) { setReturnMsg("Enter borrow ID"); return; }
+    setReturnLoading(true);
+    try {
+      await returnBook(Number(returnCode));
+      setReturnMsg("✓ Book returned — stock updated");
+      setReturnCode(""); setReturnCondition("Good");
+      const fresh = await fetchLibrarianActiveBorrows();
+      setActiveBorrows(fresh);
+    } catch (err: any) {
+      setReturnMsg(err?.message || "Failed to return book");
+    } finally {
+      setReturnLoading(false);
+      setTimeout(() => setReturnMsg(""), 4000);
+    }
+  };
+
+  const handleAddBook = async () => {
+    if (!addForm.title) { setAddBookMsg("Title is required"); return; }
+    setAddBookLoading(true);
+    try {
+      await addLibraryBook({
+        title: addForm.title,
+        author: addForm.author || undefined,
+        isbn: addForm.isbn || undefined,
+        shelf_location: addForm.shelf || undefined,
+        total_copies: Number(addForm.copies) || 1,
+        available_copies: Number(addForm.copies) || 1,
+        subject_area: addForm.subject || undefined,
+      });
+      setAddBookMsg("✓ Book added to catalog");
+      setAddForm({ title:"", author:"", subject:"", shelf:"", isbn:"", copies:"1" });
+    } catch (err: any) {
+      setAddBookMsg(err?.message || "Failed to add book");
+    } finally {
+      setAddBookLoading(false);
+      setTimeout(() => setAddBookMsg(""), 4000);
+    }
+  };
+
+  const handleRequest = async () => {
+    if (!requestForm.title) { setRequestMsg("Title is required"); return; }
+    try {
+      await submitBookRequest({
+        title: requestForm.title,
+        subject: requestForm.author || undefined,
+        reason: requestForm.reason || undefined,
+      });
+      setRequestMsg("✓ Request submitted for approval");
+      setRequestForm({ title:"", author:"", subject:"", reason:"" });
+    } catch (err: any) {
+      setRequestMsg(err?.message || "Failed to submit request");
+    } finally {
+      setTimeout(() => setRequestMsg(""), 4000);
+    }
   };
 
   const handleReturn = () => {
@@ -144,8 +223,9 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
               <label>Shelf<input placeholder="e.g. A-12" value={addForm.shelf} onChange={e => setAddForm(p => ({...p, shelf: e.target.value}))} /></label>
               <label>ISBN<input placeholder="Optional" value={addForm.isbn} onChange={e => setAddForm(p => ({...p, isbn: e.target.value}))} /></label>
               <label>Copies<input type="number" min="1" value={addForm.copies} onChange={e => setAddForm(p => ({...p, copies: e.target.value}))} /></label>
-              <button className="tool-button primary" style={{marginTop:4}} onClick={() => setAddForm({title:"",author:"",subject:"",shelf:"",isbn:"",copies:"1"})}>
-                <Plus size={15} />Add to Catalog
+              {addBookMsg && <p className={`notice-strip ${addBookMsg.startsWith("✓") ? "success" : "error"}`}>{addBookMsg}</p>}
+              <button className="tool-button primary" style={{marginTop:4}} onClick={handleAddBook} disabled={addBookLoading}>
+                <Plus size={15} />{addBookLoading ? "Adding…" : "Add to Catalog"}
               </button>
             </div>
           </div>
@@ -172,11 +252,14 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
               <BookOpen size={18} />
             </div>
             <div className="office-form">
-              <label>Student ID / Name<input placeholder="Search student…" value={issueStudent} onChange={e => setIssueStudent(e.target.value)} /></label>
-              <label>Book Code<input placeholder="Scan or type code" value={issueCode} onChange={e => setIssueCode(e.target.value)} /></label>
+              <label>Student Name / Admission No
+                <input placeholder="Search student…" value={issueStudent} onChange={e => handleIssueStudentSearch(e.target.value)} />
+                {issueStudentId && <span style={{fontSize:"0.75rem",color:"#10b981",marginTop:2,display:"block"}}>✓ Student found (user #{issueStudentId})</span>}
+              </label>
+              <label>Book Code (ID)<input placeholder="Enter book ID from catalog" value={issueCode} onChange={e => setIssueCode(e.target.value)} /></label>
               <label>Due Date<input type="date" value={issueDue} onChange={e => setIssueDue(e.target.value)} /></label>
               {issueMsg && <p className={`notice-strip ${issueMsg.startsWith("✓") ? "success" : "error"}`}>{issueMsg}</p>}
-              <button className="tool-button primary" onClick={handleIssue}><BookOpen size={15} />Issue Book</button>
+              <button className="tool-button primary" onClick={handleIssue} disabled={issueLoading}><BookOpen size={15} />{issueLoading ? "Issuing…" : "Issue Book"}</button>
             </div>
           </div>
 
@@ -187,14 +270,14 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
               <RotateCcw size={18} />
             </div>
             <div className="office-form">
-              <label>Book Code<input placeholder="Scan or type code" value={returnCode} onChange={e => setReturnCode(e.target.value)} /></label>
+              <label>Borrow ID<input placeholder="Enter borrow record ID" value={returnCode} onChange={e => setReturnCode(e.target.value)} /></label>
               <label>Condition
                 <select value={returnCondition} onChange={e => setReturnCondition(e.target.value)}>
                   <option>Good</option><option>Damaged</option><option>Lost</option>
                 </select>
               </label>
               {returnMsg && <p className={`notice-strip ${returnMsg.startsWith("✓") ? "success" : "error"}`}>{returnMsg}</p>}
-              <button className="tool-button primary" onClick={handleReturn}><RotateCcw size={15} />Process Return</button>
+              <button className="tool-button primary" onClick={handleReturn} disabled={returnLoading}><RotateCcw size={15} />{returnLoading ? "Processing…" : "Process Return"}</button>
             </div>
 
             {/* Active loans mini-list */}
@@ -283,11 +366,7 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
             <label>Subject<input placeholder="e.g. Mathematics" value={requestForm.subject} onChange={e => setRequestForm(p => ({...p, subject: e.target.value}))} /></label>
             <label>Reason<textarea placeholder="Why is this book needed?" rows={3} value={requestForm.reason} onChange={e => setRequestForm(p => ({...p, reason: e.target.value}))} /></label>
             {requestMsg && <p className={`notice-strip ${requestMsg.startsWith("✓") ? "success" : "error"}`}>{requestMsg}</p>}
-            <button className="tool-button primary" onClick={() => {
-              if (!requestForm.title || !requestForm.author) { setRequestMsg("Fill title and author"); return; }
-              setRequestMsg("✓ Request submitted for approval");
-              setRequestForm({ title:"", author:"", subject:"", reason:"" });
-            }}><Plus size={15} />Submit Request</button>
+            <button className="tool-button primary" onClick={handleRequest}><Plus size={15} />Submit Request</button>
           </div>
         </div>
       </div>

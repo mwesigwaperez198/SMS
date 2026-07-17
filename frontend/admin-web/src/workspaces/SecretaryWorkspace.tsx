@@ -1,7 +1,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Users, UserPlus, FileText, Upload, Search, Download, X } from "lucide-react";
 import type { ConnectedData, GuardianInfo } from "../api";
-import { fetchSecretaryGuardianList } from "../api";
+import { fetchSecretaryGuardianList, createStudent } from "../api";
 import { printElement } from "../utils/exportUtils";
 
 interface SecretaryWorkspaceProps {
@@ -27,15 +27,30 @@ export function SecretaryWorkspace({ view, data, onViewChange }: SecretaryWorksp
   const set = (k: keyof typeof EMPTY_FORM) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm(p => ({...p, [k]: e.target.value}));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.fullName || !form.sex || !form.dob || !form.targetClass) {
       setSubmitMsg("Fill all required fields (*)");
       return;
     }
-    setSubmitMsg("Admission submitted successfully!");
-    setForm(EMPTY_FORM);
-    setTimeout(() => setSubmitMsg(""), 4000);
+    setSubmitting(true);
+    try {
+      const admNo = `ADM-${Date.now().toString(36).toUpperCase()}`;
+      await createStudent({
+        name: form.fullName,
+        admission_number: admNo,
+        class_name: form.targetClass,
+      });
+      setSubmitMsg("Admission submitted successfully!");
+      setForm(EMPTY_FORM);
+    } catch (err: any) {
+      setSubmitMsg(err?.message || "Failed to submit admission");
+    } finally {
+      setSubmitting(false);
+      setTimeout(() => setSubmitMsg(""), 4000);
+    }
   };
 
   const filteredStudents = data.students.filter(s =>
@@ -163,7 +178,7 @@ export function SecretaryWorkspace({ view, data, onViewChange }: SecretaryWorksp
 
               {submitMsg && <p className={`notice-strip ${submitMsg.startsWith("Admission") ? "success" : "error"}`}>{submitMsg}</p>}
               <div style={{display:"flex",gap:10,paddingTop:4}}>
-                <button type="submit" className="tool-button primary"><UserPlus size={15}/>Submit Admission</button>
+                <button type="submit" className="tool-button primary" disabled={submitting}><UserPlus size={15}/>{submitting ? "Submitting…" : "Submit Admission"}</button>
                 <button type="button" className="tool-button" onClick={() => setForm(EMPTY_FORM)}>Clear</button>
               </div>
             </div>

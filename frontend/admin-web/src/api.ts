@@ -243,7 +243,8 @@ function mapStudent(s: any): StudentRecord {
     className: s.class_name ?? "",
     stream: s.stream_name ?? "",
     guardian: s.guardian_name ?? "",
-    status: s.is_active ? "Active" : "Inactive"
+    status: s.is_active ? "Active" : "Inactive",
+    userId: s.user_id ?? null,
   };
 }
 
@@ -998,5 +999,80 @@ export async function uploadStudentPhoto(studentId: number, photoData: string): 
   return apiRequest(`/api/v1/students/${studentId}/photo`, {
     method: "POST",
     body: JSON.stringify({ photo_data: photoData }),
+  });
+}
+
+// ─── Secretary: Create Student + Link Guardian ────────────────
+
+export async function createStudent(payload: {
+  name: string;
+  admission_number?: string;
+  class_name?: string;
+  stream_name?: string;
+}): Promise<any> {
+  return apiRequest("/api/v1/students/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function linkStudentGuardian(studentId: number, payload: {
+  guardian_id: number;
+  relationship?: string;
+  is_primary?: boolean;
+}): Promise<any> {
+  return apiRequest(`/api/v1/students/${studentId}/guardians`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+// ─── Librarian: Issue / Return ────────────────────────────────
+
+export async function issueBook(payload: {
+  book_id: number;
+  borrower_id: number;
+  due_date: string;
+}): Promise<any> {
+  return apiRequest("/api/v1/library/borrows", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function returnBook(borrowId: number): Promise<any> {
+  return apiRequest(`/api/v1/library/borrows/${borrowId}/return`, {
+    method: "PATCH",
+  });
+}
+
+// ─── Librarian: Add Book ──────────────────────────────────────
+
+export async function addLibraryBook(payload: {
+  title: string;
+  author?: string;
+  isbn?: string;
+  shelf_location?: string;
+  total_copies?: number;
+  available_copies?: number;
+  subject_area?: string;
+}): Promise<any> {
+  return apiRequest("/api/v1/library/books", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+// ─── Librarian: Submit Book Request ───────────────────────────
+
+export async function submitBookRequest(payload: {
+  title: string;
+  subject?: string;
+  reason?: string;
+  priority?: string;
+}): Promise<any> {
+  return apiRequest("/api/v1/library/requests", {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }

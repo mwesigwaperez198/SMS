@@ -52,6 +52,7 @@ export interface StudentRecord {
   guardian: string;
   guardianPhone?: string;
   status: string;
+  userId?: number | null;
 }
 
 export interface FullStudentRecord {
