@@ -34,6 +34,9 @@ export function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [maintenance, setMaintenance] = useState(false);
   const [maintenanceLoading, setMaintenanceLoading] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
+  const [securitySettings, setSecuritySettings] = useState({ jwtRotation: "Every 30 days", sessionTimeout: "4 hours" });
+  const [notificationSettings, setNotificationSettings] = useState({ criticalAlerts: "Email + SMS", weeklyReport: "Enabled" });
 
   const loadData = async () => {
     setLoading(true);
@@ -63,6 +66,25 @@ export function SettingsPage() {
   };
 
   useEffect(() => { loadData(); }, []);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("novara_security_settings");
+    if (saved) setSecuritySettings(JSON.parse(saved));
+    const notifSaved = localStorage.getItem("novara_notification_settings");
+    if (notifSaved) setNotificationSettings(JSON.parse(notifSaved));
+  }, []);
+
+  const handleSaveSecurity = () => {
+    localStorage.setItem("novara_security_settings", JSON.stringify(securitySettings));
+    setSaveMsg("Security settings saved locally");
+    setTimeout(() => setSaveMsg(""), 3000);
+  };
+
+  const handleSaveNotifications = () => {
+    localStorage.setItem("novara_notification_settings", JSON.stringify(notificationSettings));
+    setSaveMsg("Notification preferences saved locally");
+    setTimeout(() => setSaveMsg(""), 3000);
+  };
 
   const runSystemCheck = async () => {
     setRunning(true);
@@ -269,14 +291,22 @@ export function SettingsPage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Label label="JWT Secret Rotation">
-            <select className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none w-full">
+            <select
+              value={securitySettings.jwtRotation}
+              onChange={(e) => setSecuritySettings({ ...securitySettings, jwtRotation: e.target.value })}
+              className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none w-full"
+            >
               <option>Every 30 days</option>
               <option>Every 60 days</option>
               <option>Every 90 days</option>
             </select>
           </Label>
           <Label label="Session Timeout">
-            <select className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none w-full">
+            <select
+              value={securitySettings.sessionTimeout}
+              onChange={(e) => setSecuritySettings({ ...securitySettings, sessionTimeout: e.target.value })}
+              className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none w-full"
+            >
               <option>1 hour</option>
               <option>4 hours</option>
               <option>8 hours</option>
@@ -284,6 +314,17 @@ export function SettingsPage() {
             </select>
           </Label>
         </div>
+        <button
+          onClick={handleSaveSecurity}
+          className="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
+          style={{
+            background: "rgba(99,102,241,0.1)",
+            border: "1px solid rgba(99,102,241,0.3)",
+            color: "#818cf8",
+          }}
+        >
+          Save Security Settings
+        </button>
       </div>
 
       {/* Notifications */}
@@ -294,20 +335,51 @@ export function SettingsPage() {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Label label="Critical Alerts">
-            <select className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none w-full">
+            <select
+              value={notificationSettings.criticalAlerts}
+              onChange={(e) => setNotificationSettings({ ...notificationSettings, criticalAlerts: e.target.value })}
+              className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none w-full"
+            >
               <option>Email + SMS</option>
               <option>Email only</option>
               <option>Disabled</option>
             </select>
           </Label>
           <Label label="Weekly Report">
-            <select className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none w-full">
+            <select
+              value={notificationSettings.weeklyReport}
+              onChange={(e) => setNotificationSettings({ ...notificationSettings, weeklyReport: e.target.value })}
+              className="bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-700 dark:text-zinc-300 outline-none w-full"
+            >
               <option>Enabled</option>
               <option>Disabled</option>
             </select>
           </Label>
         </div>
+        <button
+          onClick={handleSaveNotifications}
+          className="px-3 py-1.5 text-xs font-medium rounded-lg transition-colors"
+          style={{
+            background: "rgba(99,102,241,0.1)",
+            border: "1px solid rgba(99,102,241,0.3)",
+            color: "#818cf8",
+          }}
+        >
+          Save Notification Preferences
+        </button>
       </div>
+
+      {saveMsg && (
+        <div className="flex items-center gap-2 p-3 rounded-lg text-xs border"
+          style={{
+            background: "rgba(34,197,94,0.08)",
+            borderColor: "rgba(34,197,94,0.2)",
+            color: "#86efac",
+          }}>
+          <CheckCircle2 size={14} />
+          {saveMsg}
+        </div>
+      )}
     </div>
   );
 }

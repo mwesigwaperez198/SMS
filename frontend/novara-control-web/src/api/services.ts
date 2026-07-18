@@ -124,6 +124,11 @@ export function toggleMaintenance(enabled: boolean): Promise<{ enabled: boolean;
   });
 }
 
+// ===== Notifications =====
+export function getNotifications(): Promise<any[]> {
+  return apiRequest("/novara/audit?limit=20").catch(() => []);
+}
+
 // ===== Registrations =====
 export function getRegistrations(status?: string): Promise<any[]> {
   const q = status ? `?status=${status}` : "";

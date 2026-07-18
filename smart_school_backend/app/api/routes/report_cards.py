@@ -53,16 +53,56 @@ def publish_report_card(
     return report_card_service.publish_report_card(db, report_card_id, current_user)
 
 
-@router.get("/download/{report_card_id}", response_model=ReportCardDownloadRead)
+@router.get("/download/{report_card_id}")
 def download_report_card(
     report_card_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(role_required(RoleId.ADMIN, RoleId.PARENT, RoleId.STUDENT)),
 ):
-    report = report_card_service.get_report_card_for_download(db, report_card_id, current_user)
+    from fastapi import HTTPException
+    from app.models.report_card import ReportCard
+    from app.models.student import Student
+    from app.models.assessment import Assessment
+
+    rc = db.query(ReportCard).filter(ReportCard.id == report_card_id).first()
+    if not rc:
+        raise HTTPException(404, "Report card not found")
+
+    student = db.query(Student).filter(Student.id == rc.student_id).first()
+    assessments = (
+        db.query(Assessment)
+        .filter(
+            Assessment.student_id == rc.student_id,
+            Assessment.academic_year == rc.academic_year,
+            Assessment.term == rc.term,
+        )
+        .all()
+    )
+
+    report_lines = [
+        "REPORT CARD",
+        f"Student: {student.name if student else 'Unknown'}",
+        f"Class: {student.class_name if student else 'N/A'}",
+        f"Term: {rc.term}",
+        f"Academic Year: {rc.academic_year}",
+        f"",
+        "--- ASSESSMENTS ---",
+    ]
+    for a in assessments:
+        report_lines.append(f"{a.subject} ({a.assessment_type}): {a.score}")
+
+    report_lines.extend([
+        f"",
+        f"Teacher Remarks: {rc.teacher_remarks or 'N/A'}",
+        f"Class Teacher Remarks: {rc.class_teacher_remarks or 'N/A'}",
+        f"Head Teacher Remarks: {rc.head_teacher_remarks or 'N/A'}",
+        f"Status: {rc.status}",
+    ])
+
     return {
-        "report_card_id": report.id,
-        "status": report.status,
-        "download_url": None,
-        "message": "PDF export is not generated yet, but this report card is available.",
+        "report_card_id": rc.id,
+        "status": rc.status,
+        "content": "\n".join(report_lines),
+        "format": "text",
+        "student_name": student.name if student else "Unknown",
     }

@@ -207,6 +207,29 @@ def _run_migrations(db):
             db.rollback()
             logger.warning("Migration bank_accounts: %s", e)
 
+    if "incidents" not in inspector.get_table_names():
+        try:
+            db.execute(text("""
+                CREATE TABLE incidents (
+                    id SERIAL PRIMARY KEY,
+                    school_id INTEGER REFERENCES schools(id),
+                    title VARCHAR(255) NOT NULL,
+                    description TEXT,
+                    severity VARCHAR(20) NOT NULL DEFAULT 'info',
+                    status VARCHAR(20) NOT NULL DEFAULT 'open',
+                    reported_by INTEGER REFERENCES users(id),
+                    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    resolved_at TIMESTAMPTZ
+                )
+            """))
+            db.execute(text("CREATE INDEX idx_incidents_school_id ON incidents(school_id)"))
+            db.execute(text("CREATE INDEX idx_incidents_status ON incidents(status)"))
+            db.commit()
+            logger.info("Created incidents table")
+        except Exception as e:
+            db.rollback()
+            logger.warning("Migration incidents: %s", e)
+
 
 def create_app() -> FastAPI:
     settings = get_settings()

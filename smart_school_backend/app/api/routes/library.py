@@ -112,3 +112,61 @@ def get_book_requests(
     current_user: User = Depends(role_required(RoleId.LIBRARIAN, RoleId.ADMIN)),
 ) -> list[LibraryRequestRead]:
     return list_book_requests(db, school_id=current_user.school_id, status_filter=status_filter)
+
+
+@router.get("/books/{book_id}", response_model=LibraryBookRead)
+def get_book(
+    book_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.models.library import LibraryBook
+    book = db.query(LibraryBook).filter(LibraryBook.id == book_id).first()
+    if not book:
+        from fastapi import HTTPException
+        raise HTTPException(404, "Book not found")
+    return book
+
+
+@router.patch("/books/{book_id}", response_model=LibraryBookRead)
+def update_book(
+    book_id: int,
+    title: str | None = None,
+    author: str | None = None,
+    shelf_location: str | None = None,
+    total_copies: int | None = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(role_required(RoleId.LIBRARIAN, RoleId.ADMIN)),
+):
+    from app.models.library import LibraryBook
+    book = db.query(LibraryBook).filter(LibraryBook.id == book_id).first()
+    if not book:
+        from fastapi import HTTPException
+        raise HTTPException(404, "Book not found")
+    if title:
+        book.title = title
+    if author:
+        book.author = author
+    if shelf_location:
+        book.shelf_location = shelf_location
+    if total_copies is not None:
+        book.total_copies = total_copies
+    db.commit()
+    db.refresh(book)
+    return book
+
+
+@router.delete("/books/{book_id}")
+def delete_book(
+    book_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(role_required(RoleId.LIBRARIAN, RoleId.ADMIN)),
+):
+    from app.models.library import LibraryBook
+    from fastapi import HTTPException
+    book = db.query(LibraryBook).filter(LibraryBook.id == book_id).first()
+    if not book:
+        raise HTTPException(404, "Book not found")
+    db.delete(book)
+    db.commit()
+    return {"msg": "deleted"}

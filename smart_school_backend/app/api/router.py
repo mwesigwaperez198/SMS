@@ -10,6 +10,7 @@ from app.api.routes import (
     fees,
     finance,
     headteacher,
+    incidents,
     library,
     notifications,
     novara_admin,
@@ -46,3 +47,4 @@ api_router.include_router(platform_admin.router)
 api_router.include_router(novara_admin.router)
 api_router.include_router(api_key_auth.router)
 api_router.include_router(role_extensions.router)
+api_router.include_router(incidents.router)

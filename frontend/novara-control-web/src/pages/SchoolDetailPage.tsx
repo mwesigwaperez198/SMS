@@ -1,6 +1,7 @@
 import { ArrowLeft, Key, Users, AlertTriangle, Clock, Activity } from "lucide-react";
 import { useData } from "../hooks/useData";
 import { getSchool, getSchoolApiKeys, generateApiKey, revokeApiKey, suspendSchool, activateSchool } from "../api/services";
+import { apiRequest } from "../api/client";
 import { useState } from "react";
 import type { ApiKey } from "../api/types";
 
@@ -14,6 +15,28 @@ export function SchoolDetailPage({ schoolId, onBack }: SchoolDetailPageProps) {
   const { data: apiKeys, refresh: refreshKeys } = useData(() => getSchoolApiKeys(schoolId), [schoolId]);
   const [generating, setGenerating] = useState(false);
   const [newKey, setNewKey] = useState<string | null>(null);
+  const [diagResult, setDiagResult] = useState<string>("");
+
+  const runDiagnostic = async (type: string) => {
+    setDiagResult("Running...");
+    const start = Date.now();
+    try {
+      if (type === "db") {
+        await apiRequest("/api/health");
+        setDiagResult(`DB Connection: OK (${Date.now() - start}ms)`);
+      } else if (type === "api") {
+        await apiRequest("/novara/dashboard/stats");
+        setDiagResult(`API Ping: OK (${Date.now() - start}ms)`);
+      } else if (type === "cache") {
+        setDiagResult("Cache: OK (no external cache configured)");
+      } else if (type === "keys") {
+        const keys = await apiRequest<any[]>(`/novara/schools/${schoolId}/api-keys`);
+        setDiagResult(`API Keys: ${(keys || []).length} active`);
+      }
+    } catch (err: any) {
+      setDiagResult(`Failed: ${err.message || err}`);
+    }
+  };
 
   if (loading) {
     return (
@@ -174,14 +197,25 @@ export function SchoolDetailPage({ schoolId, onBack }: SchoolDetailPageProps) {
             <h3 className="text-sm font-medium">Diagnostic Tools</h3>
           </div>
           <div className="space-y-2">
-            {["Test DB Connection", "Ping API", "Check Cache", "Verify Keys"].map((tool) => (
+            {[
+              { label: "Test DB Connection", type: "db" },
+              { label: "Ping API", type: "api" },
+              { label: "Check Cache", type: "cache" },
+              { label: "Verify Keys", type: "keys" },
+            ].map(({ label, type }) => (
               <button
-                key={tool}
+                key={type}
+                onClick={() => runDiagnostic(type)}
                 className="w-full text-left text-sm text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:text-zinc-200 bg-zinc-100 dark:bg-zinc-800/50 hover:bg-zinc-100 dark:bg-zinc-800 rounded-lg px-3 py-2 transition-colors"
               >
-                {tool}
+                {label}
               </button>
             ))}
+            {diagResult && (
+              <p style={{ marginTop: 12, padding: 10, borderRadius: 8, background: "rgba(255,255,255,0.05)", fontSize: "0.88rem" }}>
+                {diagResult}
+              </p>
+            )}
           </div>
         </div>
         <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-5">

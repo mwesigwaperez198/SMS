@@ -5,6 +5,7 @@ from app.models.attendance import Attendance
 from app.models.audit import AuditLog
 from app.models.fees import FeeCategory, Invoice, Payment, Receipt
 from app.models.finance import BankAccount, CashEntry, Quotation, Requisition
+from app.models.incident import Incident
 from app.models.library import LibraryBook, LibraryBorrow, LibraryRequest
 from app.models.leave import LeaveRequest
 from app.models.notification import Notification
@@ -28,6 +29,7 @@ __all__ = [
     "Base",
     "CashEntry",
     "FeeCategory",
+    "Incident",
     "Invoice",
     "LeaveRequest",
     "LibraryBook",

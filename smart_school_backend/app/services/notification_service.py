@@ -180,6 +180,8 @@ def queue_sms_notifications(
     failed = 0
     details = []
 
+    sms_pairs = []
+
     for user in recipients:
         if not user.phone:
             failed += 1
@@ -198,6 +200,7 @@ def queue_sms_notifications(
         )
         db.add(notification)
         queued += 1
+        sms_pairs.append((user.phone, user.id, user.name))
         details.append(f"User {user.id} ({user.name}): queued to {user.phone}")
 
     if queued > 0:
@@ -210,5 +213,18 @@ def queue_sms_notifications(
             after_data={"role_id": payload.role_id, "queued": queued, "failed": failed},
         )
         db.commit()
+
+    try:
+        from app.services.sms_service import get_sms_gateway
+        gateway = get_sms_gateway()
+        for phone, uid, uname in sms_pairs:
+            try:
+                sent = gateway.send(phone, payload.message)
+                if not sent:
+                    details.append(f"User {uid} ({uname}): SMS gateway returned false")
+            except Exception as e:
+                details.append(f"User {uid} ({uname}): SMS send error: {e}")
+    except Exception:
+        pass
 
     return queued, failed, details
