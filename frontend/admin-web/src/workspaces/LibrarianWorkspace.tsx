@@ -137,12 +137,6 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
     }
   };
 
-  const handleReturn = () => {
-    if (!returnCode) { setReturnMsg("Enter book code"); return; }
-    setReturnMsg("✓ Book returned — stock updated");
-    setReturnCode(""); setReturnCondition("Good");
-  };
-
   const handleDistribute = () => {
     if (!selectedBook || !targetClass) { setDistributeMsg("Select book and class"); return; }
     setDistributeMsg(`✓ Distributed to ${targetClass}`);
