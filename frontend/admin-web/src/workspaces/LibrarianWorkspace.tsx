@@ -7,13 +7,14 @@ import { printElement } from "../utils/exportUtils";
 interface LibrarianWorkspaceProps {
   view: string;
   data: ConnectedData;
+  onViewChange?: (view: string) => void;
   onShareRequestedBooks: () => void;
   roleKey?: string;
 }
 
 const CLASSES = ["P4","P5","P6","P7","S1","S2","S3","S4","S5","S6"];
 
-export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: LibrarianWorkspaceProps) {
+export function LibrarianWorkspace({ view, data, onViewChange, onShareRequestedBooks }: LibrarianWorkspaceProps) {
   const [search, setSearch] = useState("");
   const [issueStudent, setIssueStudent] = useState("");
   const [issueStudentId, setIssueStudentId] = useState<number | null>(null);
@@ -450,6 +451,10 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
   // Default dashboard
   return (
     <div className="content-grid">
+      <div className="welcome-banner">
+        <h2>Library Management</h2>
+        <p>Manage book catalog, issues, returns, and student book requests.</p>
+      </div>
       {overdueCount > 0 && (
         <div className="notice-strip" style={{background:"#fee2e2",color:"#b91c1c",display:"flex",alignItems:"center",gap:8}}>
           <AlertCircle size={16} />{overdueCount} overdue {overdueCount === 1 ? "book" : "books"} — check Issue &amp; Return
@@ -461,8 +466,13 @@ export function LibrarianWorkspace({ view, data, onShareRequestedBooks }: Librar
         <div className="metric amber"><div className="metric-icon"><BookOpen size={22}/></div><div className="metric-body"><strong>{totalBorrowed}</strong><span>Borrowed</span></div></div>
         <div className="metric red"><div className="metric-icon"><AlertCircle size={22}/></div><div className="metric-body"><strong>{pendingRequests.length}</strong><span>Requests</span></div></div>
       </div>
-      <div className="notice-strip" style={{display:"flex",gap:8,alignItems:"center",justifyContent:"space-between"}}>
-        <span>Select a view from the sidebar — Catalog, Issue &amp; Return, Book Requests, Upload to Students, or Reports.</span>
+      <div className="glass-card" style={{ padding: 16 }}>
+        <p className="eyebrow" style={{ marginBottom: 10 }}>Quick Navigation</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {["Catalog", "Issue & Return", "Book Requests", "Upload to Students", "Reports"].map(v => (
+            <button key={v} className="tool-button" onClick={() => onViewChange?.(v)}>{v}</button>
+          ))}
+        </div>
       </div>
     </div>
   );

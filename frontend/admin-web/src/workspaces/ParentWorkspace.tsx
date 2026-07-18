@@ -8,10 +8,11 @@ import { downloadElement } from "../utils/exportUtils";
 interface ParentWorkspaceProps {
   view: string;
   data: ConnectedData;
+  onViewChange?: (view: string) => void;
   session: { user: { full_name: string; school: string } } | null;
 }
 
-export function ParentWorkspace({ view, data, session }: ParentWorkspaceProps) {
+export function ParentWorkspace({ view, data, onViewChange, session }: ParentWorkspaceProps) {
   const [attendanceComment, setAttendanceComment] = useState("");
   const [attendanceSaved, setAttendanceSaved] = useState(false);
   const [reportComment, setReportComment] = useState("");
@@ -344,7 +345,7 @@ export function ParentWorkspace({ view, data, session }: ParentWorkspaceProps) {
         <div className="student-avatar-lg">{childName.charAt(0)}</div>
         <div>
           <strong style={{ fontSize: "1.2rem" }}>{childName}</strong>
-          <p style={{ margin: "4px 0 0", opacity: 0.85, fontSize: "0.9rem" }}>{classDisplay} · {childAdm}</p>
+          <p style={{ margin: "4px 0 0", opacity: 0.85, fontSize: "0.9rem" }}>{classDisplay} \u00b7 {childAdm}</p>
         </div>
       </div>
       <div className="metric-grid">
@@ -353,7 +354,14 @@ export function ParentWorkspace({ view, data, session }: ParentWorkspaceProps) {
         <div className="metric blue"><div className="metric-icon"><FileText size={22} /></div><div className="metric-body"><strong>{lastGrade}</strong><span>Last Grade</span></div></div>
         <div className="metric teal"><div className="metric-icon"><Bell size={22} /></div><div className="metric-body"><strong>{unreadCount}</strong><span>Unread</span></div></div>
       </div>
-      <div className="notice-strip">Select a view — Home, Fees, Attendance, Report Card, or Messages.</div>
+      <div className="glass-card" style={{ padding: 16 }}>
+        <p className="eyebrow" style={{ marginBottom: 10 }}>Quick Navigation</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {["Home", "Fees", "Receipts", "Attendance", "Report Card", "Messages"].map(v => (
+            <button key={v} className="tool-button" onClick={() => onViewChange?.(v)}>{v}</button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

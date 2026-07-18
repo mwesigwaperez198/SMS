@@ -18,6 +18,7 @@ import { printElement, exportAsCSV } from "../utils/exportUtils";
 interface BursarWorkspaceProps {
   view: string;
   data: ConnectedData;
+  onViewChange?: (view: string) => void;
   onShareFinance: () => void;
 }
 
@@ -158,7 +159,7 @@ function mapBankAccount(a: any): BankAccount {
   };
 }
 
-export function BursarWorkspace({ view, data, onShareFinance }: BursarWorkspaceProps) {
+export function BursarWorkspace({ view, data, onViewChange, onShareFinance }: BursarWorkspaceProps) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [cashEntries, setCashEntries] = useState<CashEntry[]>([]);
@@ -1029,8 +1030,19 @@ export function BursarWorkspace({ view, data, onShareFinance }: BursarWorkspaceP
 
   return (
     <div className="content-grid">
+      <div className="welcome-banner">
+        <h2>Finance Office</h2>
+        <p>Manage payments, receipts, cashbook, quotations, and requisitions.</p>
+      </div>
       <MetricsBar />
-      <div className="notice-strip">Select a view — Payments, Receipts, Cashbook, Quotations, Requisitions, Reports, or Settings.</div>
+      <div className="glass-card" style={{ padding: 16 }}>
+        <p className="eyebrow" style={{ marginBottom: 10 }}>Quick Navigation</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {["Home", "Payments", "Receipts", "Cashbook", "Quotations", "Requisitions", "Reports", "Settings"].map(v => (
+            <button key={v} className="tool-button" onClick={() => onViewChange?.(v)}>{v}</button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

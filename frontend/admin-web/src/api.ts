@@ -325,7 +325,7 @@ const ROLE_NAV: Record<RoleKey, string[]> = {
   "super-admin": ["Dashboard", "Schools", "Registrations", "Keys", "Plans", "Audit Log", "Users", "System Alerts", "System Check", "Support"],
   admin: ["Home", "Approvals", "Students", "Staff", "Finance", "Communication", "Reports", "Settings", "Notifications"],
   headteacher: ["Dashboard", "Staff", "Attendance", "Performance", "Leave Requests", "Messages"],
-  secretary: ["Register Student", "Student Profiles", "Import Students", "Guardians", "Documents"],
+  secretary: ["Dashboard", "Register Student", "Student Profiles", "Student Requirements", "Import Students", "Guardians", "Documents"],
   bursar: ["Home", "Payments", "Receipts", "Cashbook", "Quotations", "Requisitions", "Reports", "Settings"],
   librarian: ["Catalog", "Issue & Return", "Book Requests", "Upload to Students", "Reports"],
   teacher: ["My Classes", "Attendance", "Assessments", "Report Remarks", "Messages"],
@@ -513,6 +513,13 @@ async function fetchConnectedData(role: RoleKey): Promise<ConnectedData> {
 }
 
 export async function loadConnectedData(role: RoleKey, onRefresh?: (fresh: ConnectedData) => void): Promise<ConnectedData> {
+  const token = sessionStorage.getItem("novara_token");
+  if (token === "demo-token") {
+    const { generateDemoData } = await import("./data/demoData");
+    const demo = generateDemoData(role);
+    return demo;
+  }
+
   const cached = getCachedData(role);
 
   if (cached) {
@@ -520,7 +527,6 @@ export async function loadConnectedData(role: RoleKey, onRefresh?: (fresh: Conne
       setCachedData(role, fresh);
       onRefresh?.(fresh);
     }).catch(() => {
-      // API unavailable — cached data already returned
     });
     return cached;
   }

@@ -60,7 +60,7 @@ export const roles: RoleProfile[] = [
     title: "Front Desk",
     accent: "#0f766e",
     icon: UsersRound,
-    nav: ["Register Student", "Student Profiles", "Import Students", "Guardians", "Documents"]
+    nav: ["Dashboard", "Register Student", "Student Profiles", "Student Requirements", "Import Students", "Guardians", "Documents"]
   },
   {
     key: "bursar",
@@ -87,7 +87,7 @@ export const roles: RoleProfile[] = [
     title: "Teaching Workspace",
     accent: "#2563eb",
     icon: GraduationCap,
-    nav: ["My Classes", "Attendance", "Assessments", "Report Remarks", "Messages"]
+    nav: ["My Classes", "Attendance", "Assessments", "Report Remarks", "Student Register", "Messages"]
   },
   {
     key: "parent",

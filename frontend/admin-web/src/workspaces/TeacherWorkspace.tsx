@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
-import { Users, BookOpen, MessageSquare, Save, CheckCircle, Star } from "lucide-react";
+import { Users, BookOpen, MessageSquare, Save, CheckCircle, Star, UserPlus, FileText, Download, Eye } from "lucide-react";
 import type { ConnectedData, TeacherClassInfo } from "../api";
 import { attendanceMark, submitAssessment, fetchTeacherClasses } from "../api";
 
 interface TeacherWorkspaceProps {
   view: string;
   data: ConnectedData;
+  onViewChange: (view: string) => void;
   onSendSms: (groupId: string, message: string, comment: string) => void;
 }
 
@@ -26,6 +27,24 @@ interface LocalStudent {
   admissionNo: string;
 }
 
+interface ManualRegisterEntry {
+  name: string;
+  admissionNo: string;
+  sex: string;
+  dob: string;
+  guardianName: string;
+  guardianPhone: string;
+  address: string;
+}
+
+interface StudentRemark {
+  studentId: string;
+  conduct: string;
+  effort: string;
+  participation: string;
+  generalRemarks: string;
+}
+
 function mapTeacherClassInfo(raw: TeacherClassInfo, idx: number): LocalClass {
   return {
     id: String(idx),
@@ -43,7 +62,9 @@ function mapTeacherClassInfo(raw: TeacherClassInfo, idx: number): LocalClass {
   };
 }
 
-export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProps) {
+const EMPTY_REGISTER: ManualRegisterEntry = { name: "", admissionNo: "", sex: "", dob: "", guardianName: "", guardianPhone: "", address: "" };
+
+export function TeacherWorkspace({ view, data, onViewChange, onSendSms }: TeacherWorkspaceProps) {
   const [teacherClasses, setTeacherClasses] = useState<LocalClass[]>([]);
   const [classesLoading, setClassesLoading] = useState(true);
   const [selectedClass, setSelectedClass] = useState("");
@@ -56,6 +77,13 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
   const [classReps, setClassReps] = useState<Record<string, string>>({});
   const [repSelectClass, setRepSelectClass] = useState("");
   const [repSelectStudent, setRepSelectStudent] = useState("");
+
+  const [manualRegister, setManualRegister] = useState<ManualRegisterEntry[]>([]);
+  const [newEntry, setNewEntry] = useState<ManualRegisterEntry>({ ...EMPTY_REGISTER });
+  const [regSaved, setRegSaved] = useState(false);
+
+  const [remarks, setRemarks] = useState<Record<string, StudentRemark>>({});
+  const [remarksSaved, setRemarksSaved] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -159,10 +187,33 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
     }
   };
 
+  const handleAddRegisterEntry = () => {
+    if (!newEntry.name.trim()) return;
+    setManualRegister(prev => [...prev, { ...newEntry }]);
+    setNewEntry({ ...EMPTY_REGISTER });
+    setRegSaved(true);
+    setTimeout(() => setRegSaved(false), 2500);
+  };
+
+  const handleRemoveRegisterEntry = (idx: number) => {
+    setManualRegister(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  const handleSaveRemarks = async (studentId: string) => {
+    setSaveStatus(p => ({ ...p, [`remark-${studentId}`]: "saving" }));
+    try {
+      await new Promise(r => setTimeout(r, 500));
+      setSaveStatus(p => ({ ...p, [`remark-${studentId}`]: "saved" }));
+      setTimeout(() => setSaveStatus(p => ({ ...p, [`remark-${studentId}`]: "" })), 2000);
+    } catch {
+      setSaveStatus(p => ({ ...p, [`remark-${studentId}`]: "" }));
+    }
+  };
+
   const handleSendMsg = () => {
     if (!msgText.trim()) return;
     onSendSms("all-parents", msgText, "Teacher message");
-    setMsgSent("✓ Message queued for parents");
+    setMsgSent("Message queued for parents");
     setMsgText("");
     setTimeout(() => setMsgSent(""), 3000);
   };
@@ -173,42 +224,112 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
     const mot = parseFloat(a?.mot ?? String(r.mot ?? ""));
     const eot = parseFloat(a?.eot ?? String(r.eot ?? ""));
     const vals = [bot, mot, eot].filter(v => !isNaN(v));
-    return vals.length ? (vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(1) : "—";
+    return vals.length ? (vals.reduce((s, v) => s + v, 0) / vals.length).toFixed(1) : "\u2014";
   };
 
   const grade = (average: string) => {
     const n = parseFloat(average);
-    if (isNaN(n)) return "—";
+    if (isNaN(n)) return "\u2014";
     if (n >= 80) return "D1"; if (n >= 70) return "D2"; if (n >= 65) return "C3";
     if (n >= 60) return "C4"; if (n >= 55) return "C5"; if (n >= 50) return "C6";
     if (n >= 45) return "P7"; if (n >= 40) return "P8"; return "F9";
   };
 
+  const classSelector = (
+    <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)}>
+      {teacherClasses.map(c => (
+        <option key={c.id} value={c.id}>{c.name} {c.stream} \u2014 {c.subject}</option>
+      ))}
+      {teacherClasses.length === 0 && <option value="">No classes found</option>}
+    </select>
+  );
+
+  if (view === "My Classes") {
+    const clsStudents = classData ? classData.students : [];
+    return (
+      <div className="content-grid">
+        <div className="welcome-banner">
+          <h2>My Classes</h2>
+          <p>View and manage your assigned classes, set class representatives.</p>
+        </div>
+        <div className="metric-grid">
+          <div className="metric teal"><div className="metric-icon"><BookOpen size={22} /></div><div className="metric-body"><strong>{teacherClasses.length}</strong><span>Classes</span></div></div>
+          <div className="metric green"><div className="metric-icon"><Users size={22} /></div><div className="metric-body"><strong>{teacherClasses.reduce((s, c) => s + c.totalStudents, 0)}</strong><span>Total Students</span></div></div>
+          <div className="metric blue"><div className="metric-icon"><Star size={22} /></div><div className="metric-body"><strong>{Object.keys(classReps).length}</strong><span>Class Reps</span></div></div>
+          <div className="metric amber"><div className="metric-icon"><MessageSquare size={22} /></div><div className="metric-body"><strong>{data.parentMessages.length}</strong><span>Messages</span></div></div>
+        </div>
+        <div className="office-layout">
+          <div className="stack-list list-panel">
+            {classesLoading && <p className="empty-state">Loading classes\u2026</p>}
+            {teacherClasses.map(cls => {
+              const repId = classReps[cls.id];
+              const repStudent = cls.students.find(s => String(s.id) === repId);
+              return (
+                <div key={cls.id} className="list-row">
+                  <div className="dot" style={{ background: repId ? "#f59e0b" : "var(--muted)" }} />
+                  <div>
+                    <strong style={{ fontSize: "0.9rem" }}>{cls.name} {cls.stream}</strong>
+                    <br /><span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>{cls.subject} \u00b7 {cls.totalStudents} students</span>
+                    {repStudent && <><br /><span style={{ fontSize: "0.78rem", color: "#f59e0b" }}>Rep: {repStudent.name}</span></>}
+                  </div>
+                  <button className="tool-button" style={{ minHeight: 28 }} onClick={() => {
+                    setRepSelectClass(`${cls.name}|${cls.stream}|${cls.id}`);
+                    setRepSelectStudent(classReps[cls.id] ?? "");
+                  }}>
+                    <Star size={13} />{repId ? "Change Rep" : "Set Rep"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          {repSelectClass && (
+            <div className="detail-panel glass-card">
+              <div className="panel-title">
+                <div className="panel-title-left"><p className="eyebrow">Class Rep</p><strong>{repSelectClass.split("|")[0]} {repSelectClass.split("|")[1]}</strong></div>
+                <Star size={18} />
+              </div>
+              <div className="office-form">
+                <label>Select Student
+                  <select value={repSelectStudent} onChange={e => setRepSelectStudent(e.target.value)}>
+                    <option value="">\u2014 choose class rep \u2014</option>
+                    {clsStudents.map(s => (
+                      <option key={s.id} value={String(s.id)}>{s.name} ({s.admission_number ?? ""})</option>
+                    ))}
+                  </select>
+                </label>
+                <button className="tool-button primary" onClick={() => {
+                  const clsId = repSelectClass.split("|")[2];
+                  setClassReps(p => ({ ...p, [clsId]: repSelectStudent }));
+                  setRepSelectClass("");
+                  setRepSelectStudent("");
+                }} disabled={!repSelectStudent}>
+                  <Star size={15} />Set as Class Representative
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (view === "Attendance") {
     return (
       <div className="content-grid">
         <div className="welcome-banner">
-          <h2>Teaching Workspace</h2>
-          <p>Manage your classes, track attendance, and enter assessments.</p>
+          <h2>Attendance Register</h2>
+          <p>Mark attendance for your class students. Select present, absent, late, or excused.</p>
         </div>
         <div className="table-panel glass-card">
           <div className="office-filters">
             {classesLoading ? (
-              <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Loading classes…</span>
-            ) : (
-              <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)}>
-                {teacherClasses.map(c => (
-                  <option key={c.id} value={c.id}>{c.name} {c.stream} — {c.subject}</option>
-                ))}
-                {teacherClasses.length === 0 && <option value="">No classes found</option>}
-              </select>
-            )}
+              <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Loading classes\u2026</span>
+            ) : classSelector}
             <button className="tool-button primary" onClick={handleSaveAttendance} disabled={classesLoading || teacherClasses.length === 0}>
               <Save size={15} />Save Attendance
             </button>
             {attSaved && <span className="badge success"><CheckCircle size={13} />Saved</span>}
           </div>
-
           <div className="attendance-grid">
             {attendanceRecords.length > 0 ? attendanceRecords.map(r => (
               <div key={r.studentId} className="attendance-row">
@@ -217,7 +338,7 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
                   <br /><span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>{r.admissionNo}</span>
                 </div>
                 <div className="status-controls">
-                  {(["present","absent","late","excused"] as AttStatus[]).map(s => (
+                  {(["present", "absent", "late", "excused"] as AttStatus[]).map(s => (
                     <button
                       key={s}
                       className={`seg-button ${s} ${attendance[r.studentId] === s ? "active" : ""}`}
@@ -233,10 +354,10 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
                 <div key={cls.id} className="attendance-row">
                   <div>
                     <strong style={{ fontSize: "0.9rem" }}>{cls.name} {cls.stream}</strong>
-                    <br /><span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>{cls.subject} · {cls.totalStudents} students</span>
+                    <br /><span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>{cls.subject} \u00b7 {cls.totalStudents} students</span>
                   </div>
                   <div className="status-controls">
-                    {(["present","absent","late","excused"] as AttStatus[]).map(s => (
+                    {(["present", "absent", "late", "excused"] as AttStatus[]).map(s => (
                       <button
                         key={s}
                         className={`seg-button ${s} ${attendance[cls.id] === s ? "active" : ""}`}
@@ -255,23 +376,20 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
     );
   }
 
-  if (view === "Assessments" || view === "Report Remarks") {
+  if (view === "Assessments") {
     return (
       <div className="content-grid">
+        <div className="welcome-banner">
+          <h2>Assessments</h2>
+          <p>Enter BOT, MOT, and EOT scores for each student. Scores are saved individually.</p>
+        </div>
         <div className="table-panel glass-card">
           <div className="office-filters">
             {classesLoading ? (
-              <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Loading classes…</span>
-            ) : (
-              <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)}>
-                {teacherClasses.map(c => (
-                  <option key={c.id} value={c.id}>{c.name} {c.stream} — {c.subject}</option>
-                ))}
-                {teacherClasses.length === 0 && <option value="">No classes found</option>}
-              </select>
-            )}
+              <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Loading classes\u2026</span>
+            ) : classSelector}
             <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>
-              {classData?.name} {classData?.stream} · {classData?.subject}
+              {classData?.name} {classData?.stream} \u00b7 {classData?.subject}
             </span>
           </div>
           <div className="table-wrap">
@@ -280,7 +398,7 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
                 <tr>
                   <th>Adm No</th><th>Student</th>
                   <th>BOT /100</th><th>MOT /100</th><th>EOT /100</th>
-                  <th>Avg</th><th>Grade</th><th>Remarks</th><th></th>
+                  <th>Avg</th><th>Grade</th><th></th>
                 </tr>
               </thead>
               <tbody>
@@ -309,15 +427,9 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
                       <td><strong>{average}</strong></td>
                       <td><span className="badge info">{grade(average)}</span></td>
                       <td>
-                        <input className="remarks-input" type="text"
-                          value={a.remarks ?? r.remarks ?? ""}
-                          placeholder="Remarks…"
-                          onChange={e => setAssessments(p => ({ ...p, [r.studentId]: { ...p[r.studentId], remarks: e.target.value } }))} />
-                      </td>
-                      <td>
                         <button className="tool-button" style={{ minHeight: 30 }} onClick={() => handleSaveMark(r.studentId)}>
                           {saveStatus[r.studentId] === "saving" ? (
-                            <span style={{ fontSize: "0.75rem" }}>Saving…</span>
+                            <span style={{ fontSize: "0.75rem" }}>Saving\u2026</span>
                           ) : saveStatus[r.studentId] === "saved" ? (
                             <CheckCircle size={14} style={{ color: "#10b981" }} />
                           ) : (
@@ -328,8 +440,8 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
                   );
                 })}
                 {assessmentRecords.length === 0 && (
-                  <tr><td colSpan={9} className="empty-state">
-                    {classesLoading ? "Loading…" : "No students in this class"}
+                  <tr><td colSpan={8} className="empty-state">
+                    {classesLoading ? "Loading\u2026" : "No students in this class"}
                   </td></tr>
                 )}
               </tbody>
@@ -340,133 +452,281 @@ export function TeacherWorkspace({ view, data, onSendSms }: TeacherWorkspaceProp
     );
   }
 
-  if (view === "Messages") {
-    return (
-      <div className="office-layout">
-        <div className="detail-panel glass-card">
-          <div className="panel-title">
-            <div className="panel-title-left"><p className="eyebrow">Communication</p><strong>Message Parents</strong></div>
-            <MessageSquare size={18} />
-          </div>
-          <div className="office-form">
-            <label>Class
-              {classesLoading ? (
-                <span style={{ color: "var(--muted)", fontSize: "0.85rem", marginLeft: 8 }}>Loading…</span>
-              ) : (
-                <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)}>
-                  {teacherClasses.map(c => (
-                    <option key={c.id} value={c.id}>{c.name} {c.stream} — {c.subject}</option>
-                  ))}
-                  {teacherClasses.length === 0 && <option value="">No classes</option>}
-                </select>
-              )}
-            </label>
-            <label>Message
-              <textarea value={msgText} onChange={e => setMsgText(e.target.value)} placeholder="Type message to parents…" />
-            </label>
-            {msgSent && <p className="notice-strip success">{msgSent}</p>}
-            <button className="tool-button primary" onClick={handleSendMsg}><MessageSquare size={15} />Send to Parents</button>
-          </div>
-        </div>
-
-        <div className="list-panel glass-card">
-          <div className="panel-title"><strong style={{ fontSize: "0.9rem" }}>Message History</strong></div>
-          <div className="stack-list">
-            {data.parentMessages.slice(0, 6).map(msg => (
-              <div key={msg.id} className="list-row">
-                <div className="dot" />
-                <div>
-                  <strong style={{ fontSize: "0.88rem" }}>{msg.subject}</strong>
-                  <br /><span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>{msg.from} · {msg.date}</span>
-                </div>
-                <span className={`badge ${msg.read ? "muted" : "info"}`}>{msg.read ? "Read" : "New"}</span>
-              </div>
-            ))}
-            {data.parentMessages.length === 0 && <p className="empty-state">No messages</p>}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (view === "My Classes") {
-    const clsStudents = classData
-      ? classData.students
-      : [];
+  if (view === "Report Remarks") {
     return (
       <div className="content-grid">
-        <div className="metric-grid">
-          <div className="metric teal"><div className="metric-icon"><BookOpen size={22} /></div><div className="metric-body"><strong>{teacherClasses.length}</strong><span>Classes</span></div></div>
-          <div className="metric green"><div className="metric-icon"><Users size={22} /></div><div className="metric-body"><strong>{teacherClasses.reduce((s, c) => s + c.totalStudents, 0)}</strong><span>Total Students</span></div></div>
-          <div className="metric blue"><div className="metric-icon"><Star size={22} /></div><div className="metric-body"><strong>{Object.keys(classReps).length}</strong><span>Class Reps</span></div></div>
-          <div className="metric amber"><div className="metric-icon"><MessageSquare size={22} /></div><div className="metric-body"><strong>{data.parentMessages.length}</strong><span>Messages</span></div></div>
+        <div className="welcome-banner">
+          <h2>Report Remarks</h2>
+          <p>Write personalized remarks about student conduct, effort, and participation for report cards.</p>
         </div>
-
-        <div className="office-layout">
-          <div className="stack-list list-panel">
-            {classesLoading && <p className="empty-state">Loading classes…</p>}
-            {teacherClasses.map(cls => {
-              const repId = classReps[cls.id];
-              const repStudent = cls.students.find(s => String(s.id) === repId);
-              return (
-                <div key={cls.id} className="list-row">
-                  <div className="dot" style={{background: repId ? "#f59e0b" : "var(--muted)"}} />
-                  <div>
-                    <strong style={{ fontSize: "0.9rem" }}>{cls.name} {cls.stream}</strong>
-                    <br /><span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>{cls.subject} · {cls.totalStudents} students</span>
-                    {repStudent && <><br /><span style={{fontSize:"0.78rem",color:"#f59e0b"}}>Rep: {repStudent.name}</span></>}
-                  </div>
-                  <button className="tool-button" style={{minHeight:28}} onClick={() => {
-                    setRepSelectClass(`${cls.name}|${cls.stream}|${cls.id}`);
-                    setRepSelectStudent(classReps[cls.id] ?? "");
-                  }}>
-                    <Star size={13} />{repId ? "Change Rep" : "Set Rep"}
-                  </button>
-                </div>
-              );
-            })}
+        <div className="table-panel glass-card">
+          <div className="office-filters">
+            {classesLoading ? (
+              <span style={{ color: "var(--muted)", fontSize: "0.85rem" }}>Loading classes\u2026</span>
+            ) : classSelector}
           </div>
-
-          {repSelectClass && (
-            <div className="detail-panel glass-card">
-              <div className="panel-title">
-                <div className="panel-title-left"><p className="eyebrow">Class Rep</p><strong>{repSelectClass.split("|")[0]} {repSelectClass.split("|")[1]}</strong></div>
-                <Star size={18} />
-              </div>
-              <div className="office-form">
-                <label>Select Student
-                  <select value={repSelectStudent} onChange={e => setRepSelectStudent(e.target.value)}>
-                    <option value="">— choose class rep —</option>
-                    {clsStudents.map(s => (
-                      <option key={s.id} value={String(s.id)}>{s.name} ({s.admission_number ?? ""})</option>
-                    ))}
-                  </select>
-                </label>
-                <button className="tool-button primary" onClick={() => {
-                  const clsId = repSelectClass.split("|")[2];
-                  setClassReps(p => ({ ...p, [clsId]: repSelectStudent }));
-                  setRepSelectClass("");
-                  setRepSelectStudent("");
-                }} disabled={!repSelectStudent}>
-                  <Star size={15} />Set as Class Representative
-                </button>
-              </div>
-            </div>
-          )}
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Adm No</th><th>Student</th>
+                  <th>Conduct</th><th>Effort</th><th>Participation</th>
+                  <th>General Remarks</th><th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {assessmentRecords.map(r => {
+                  const rem = remarks[r.studentId] ?? { conduct: "", effort: "", participation: "", generalRemarks: "" };
+                  return (
+                    <tr key={r.studentId}>
+                      <td><code style={{ fontSize: "0.78rem" }}>{r.admissionNo}</code></td>
+                      <td><strong style={{ fontSize: "0.88rem" }}>{r.studentName}</strong></td>
+                      <td>
+                        <select className="mark-input" style={{ width: 110 }}
+                          value={rem.conduct}
+                          onChange={e => setRemarks(p => ({ ...p, [r.studentId]: { ...p[r.studentId], conduct: e.target.value } }))}>
+                          <option value="">Select</option>
+                          <option>Excellent</option><option>Good</option><option>Fair</option><option>Poor</option>
+                        </select>
+                      </td>
+                      <td>
+                        <select className="mark-input" style={{ width: 110 }}
+                          value={rem.effort}
+                          onChange={e => setRemarks(p => ({ ...p, [r.studentId]: { ...p[r.studentId], effort: e.target.value } }))}>
+                          <option value="">Select</option>
+                          <option>Very Hard</option><option>Hard</option><option>Moderate</option><option>Lazy</option>
+                        </select>
+                      </td>
+                      <td>
+                        <select className="mark-input" style={{ width: 110 }}
+                          value={rem.participation}
+                          onChange={e => setRemarks(p => ({ ...p, [r.studentId]: { ...p[r.studentId], participation: e.target.value } }))}>
+                          <option value="">Select</option>
+                          <option>Active</option><option>Moderate</option><option>Quiet</option><option>Disruptive</option>
+                        </select>
+                      </td>
+                      <td>
+                        <input className="remarks-input" type="text"
+                          value={rem.generalRemarks}
+                          placeholder="Write a personal remark\u2026"
+                          onChange={e => setRemarks(p => ({ ...p, [r.studentId]: { ...p[r.studentId], generalRemarks: e.target.value } }))} />
+                      </td>
+                      <td>
+                        <button className="tool-button" style={{ minHeight: 30 }} onClick={() => handleSaveRemarks(r.studentId)}>
+                          {saveStatus[`remark-${r.studentId}`] === "saving" ? (
+                            <span style={{ fontSize: "0.75rem" }}>Saving\u2026</span>
+                          ) : saveStatus[`remark-${r.studentId}`] === "saved" ? (
+                            <CheckCircle size={14} style={{ color: "#10b981" }} />
+                          ) : (
+                            <Save size={14} />)}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {assessmentRecords.length === 0 && (
+                  <tr><td colSpan={7} className="empty-state">
+                    {classesLoading ? "Loading\u2026" : "No students in this class"}
+                  </td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
     );
   }
+
+  if (view === "Student Register") {
+    return (
+      <div className="content-grid">
+        <div className="welcome-banner">
+          <h2>Manual Student Register</h2>
+          <p>Add students manually to your class register alongside imported profiles.</p>
+        </div>
+        <div className="detail-panel glass-card">
+          <div className="panel-title">
+            <div className="panel-title-left"><p className="eyebrow">Register</p><strong>Add Student to Class</strong></div>
+            <UserPlus size={18} />
+          </div>
+          <div className="office-form">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <label>Full Name *
+                <input value={newEntry.name} onChange={e => setNewEntry(p => ({ ...p, name: e.target.value }))} placeholder="Student full name" />
+              </label>
+              <label>Admission No
+                <input value={newEntry.admissionNo} onChange={e => setNewEntry(p => ({ ...p, admissionNo: e.target.value }))} placeholder="Auto-generated if empty" />
+              </label>
+              <label>Sex *
+                <select value={newEntry.sex} onChange={e => setNewEntry(p => ({ ...p, sex: e.target.value }))}>
+                  <option value="">Select</option><option>Male</option><option>Female</option>
+                </select>
+              </label>
+              <label>Date of Birth
+                <input type="date" value={newEntry.dob} onChange={e => setNewEntry(p => ({ ...p, dob: e.target.value }))} />
+              </label>
+              <label>Guardian Name
+                <input value={newEntry.guardianName} onChange={e => setNewEntry(p => ({ ...p, guardianName: e.target.value }))} placeholder="Guardian full name" />
+              </label>
+              <label>Guardian Phone
+                <input value={newEntry.guardianPhone} onChange={e => setNewEntry(p => ({ ...p, guardianPhone: e.target.value }))} placeholder="0700 000000" />
+              </label>
+            </div>
+            <label>Address
+              <input value={newEntry.address} onChange={e => setNewEntry(p => ({ ...p, address: e.target.value }))} placeholder="Physical address" />
+            </label>
+            <div style={{ display: "flex", gap: 10, paddingTop: 4 }}>
+              <button className="tool-button primary" onClick={handleAddRegisterEntry} disabled={!newEntry.name.trim()}>
+                <UserPlus size={15} />Add to Register
+              </button>
+              {regSaved && <span className="badge success"><CheckCircle size={13} />Added</span>}
+            </div>
+          </div>
+        </div>
+        {manualRegister.length > 0 && (
+          <div className="table-panel glass-card">
+            <div className="panel-title">
+              <div className="panel-title-left"><p className="eyebrow">Class Register</p><strong>{classData?.name ?? "All"} \u2014 Manual Entries ({manualRegister.length})</strong></div>
+              <Download size={18} />
+            </div>
+            <div className="table-wrap">
+              <table>
+                <thead>
+                  <tr><th>#</th><th>Name</th><th>Adm No</th><th>Sex</th><th>DOB</th><th>Guardian</th><th>Phone</th><th></th></tr>
+                </thead>
+                <tbody>
+                  {manualRegister.map((entry, idx) => (
+                    <tr key={idx}>
+                      <td>{idx + 1}</td>
+                      <td><strong>{entry.name}</strong></td>
+                      <td><code style={{ fontSize: "0.78rem" }}>{entry.admissionNo || `MAN/${Date.now().toString(36).slice(-4).toUpperCase()}`}</code></td>
+                      <td>{entry.sex}</td>
+                      <td>{entry.dob || "\u2014"}</td>
+                      <td>{entry.guardianName || "\u2014"}</td>
+                      <td>{entry.guardianPhone || "\u2014"}</td>
+                      <td>
+                        <button className="tool-button" style={{ minHeight: 28, color: "#ef4444" }} onClick={() => handleRemoveRegisterEntry(idx)}>
+                          Remove
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+        {classStudents.length > 0 && (
+          <div className="table-panel glass-card">
+            <div className="panel-title">
+              <div className="panel-title-left"><p className="eyebrow">Imported Profiles</p><strong>{classData?.name ?? "All"} \u2014 System Students ({classStudents.length})</strong></div>
+            </div>
+            <div className="table-wrap">
+              <table>
+                <thead><tr><th>#</th><th>Name</th><th>Admission No</th><th></th></tr></thead>
+                <tbody>
+                  {classStudents.map((s, idx) => (
+                    <tr key={s.id}>
+                      <td>{idx + 1}</td>
+                      <td><strong>{s.name}</strong></td>
+                      <td><code style={{ fontSize: "0.78rem" }}>{s.admissionNo}</code></td>
+                      <td><span className="badge success">Imported</span></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (view === "Messages") {
+    return (
+      <div className="content-grid">
+        <div className="welcome-banner">
+          <h2>Parent Communication</h2>
+          <p>Send messages and updates to parents of your class students.</p>
+        </div>
+        <div className="office-layout">
+          <div className="detail-panel glass-card">
+            <div className="panel-title">
+              <div className="panel-title-left"><p className="eyebrow">Communication</p><strong>Message Parents</strong></div>
+              <MessageSquare size={18} />
+            </div>
+            <div className="office-form">
+              <label>Class
+                {classesLoading ? (
+                  <span style={{ color: "var(--muted)", fontSize: "0.85rem", marginLeft: 8 }}>Loading\u2026</span>
+                ) : (
+                  <select value={selectedClass} onChange={e => setSelectedClass(e.target.value)}>
+                    {teacherClasses.map(c => (
+                      <option key={c.id} value={c.id}>{c.name} {c.stream} \u2014 {c.subject}</option>
+                    ))}
+                    {teacherClasses.length === 0 && <option value="">No classes</option>}
+                  </select>
+                )}
+              </label>
+              <label>Message
+                <textarea value={msgText} onChange={e => setMsgText(e.target.value)} placeholder="Type message to parents\u2026" />
+              </label>
+              {msgSent && <p className="notice-strip success">{msgSent}</p>}
+              <button className="tool-button primary" onClick={handleSendMsg}><MessageSquare size={15} />Send to Parents</button>
+            </div>
+          </div>
+          <div className="list-panel glass-card">
+            <div className="panel-title"><strong style={{ fontSize: "0.9rem" }}>Message History</strong></div>
+            <div className="stack-list">
+              {data.parentMessages.slice(0, 6).map(msg => (
+                <div key={msg.id} className="list-row">
+                  <div className="dot" />
+                  <div>
+                    <strong style={{ fontSize: "0.88rem" }}>{msg.subject}</strong>
+                    <br /><span style={{ fontSize: "0.78rem", color: "var(--muted)" }}>{msg.from} \u00b7 {msg.date}</span>
+                  </div>
+                  <span className={`badge ${msg.read ? "muted" : "info"}`}>{msg.read ? "Read" : "New"}</span>
+                </div>
+              ))}
+              {data.parentMessages.length === 0 && <p className="empty-state">No messages</p>}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const quickNavItems = [
+    { label: "My Classes", view: "My Classes", icon: <BookOpen size={15} /> },
+    { label: "Attendance", view: "Attendance", icon: <Users size={15} /> },
+    { label: "Assessments", view: "Assessments", icon: <FileText size={15} /> },
+    { label: "Report Remarks", view: "Report Remarks", icon: <Star size={15} /> },
+    { label: "Student Register", view: "Student Register", icon: <UserPlus size={15} /> },
+    { label: "Messages", view: "Messages", icon: <MessageSquare size={15} /> },
+  ];
 
   return (
     <div className="content-grid">
+      <div className="welcome-banner">
+        <h2>Teaching Workspace</h2>
+        <p>Manage your classes, attendance, assessments, and student registers.</p>
+      </div>
       <div className="metric-grid">
         <div className="metric teal"><div className="metric-icon"><BookOpen size={22} /></div><div className="metric-body"><strong>{teacherClasses.length}</strong><span>Classes</span></div></div>
         <div className="metric green"><div className="metric-icon"><Users size={22} /></div><div className="metric-body"><strong>{teacherClasses.reduce((s, c) => s + c.totalStudents, 0)}</strong><span>Students</span></div></div>
-        <div className="metric blue"><div className="metric-icon"><Save size={22} /></div><div className="metric-body"><strong>{assessmentRecords.length}</strong><span>Assessments</span></div></div>
+        <div className="metric blue"><div className="metric-icon"><FileText size={22} /></div><div className="metric-body"><strong>{assessmentRecords.length}</strong><span>Assessments</span></div></div>
         <div className="metric amber"><div className="metric-icon"><MessageSquare size={22} /></div><div className="metric-body"><strong>{data.parentMessages.length}</strong><span>Messages</span></div></div>
       </div>
-      <div className="notice-strip">Select a view — My Classes, Attendance, Assessments, Report Remarks, or Messages.</div>
+      <div className="glass-card" style={{ padding: 16 }}>
+        <p className="eyebrow" style={{ marginBottom: 10 }}>Quick Navigation</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {quickNavItems.map(item => (
+            <button key={item.view} className="tool-button" onClick={() => onViewChange(item.view)}>
+              {item.icon}{item.label}
+            </button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

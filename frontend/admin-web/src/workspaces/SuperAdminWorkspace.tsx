@@ -781,8 +781,19 @@ export function SuperAdminWorkspace({ view, data, onViewChange }: SuperAdminWork
   // Default fallback
   return (
     <div className="content-grid">
+      <div className="welcome-banner">
+        <h2>Platform Control</h2>
+        <p>Manage schools, registrations, keys, and system settings.</p>
+      </div>
       <Metrics />
-      <div className="notice-strip">Select a view — Dashboard, Schools, Registrations, Keys, Plans, Audit Log, Users, System Alerts, System Check, or Support.</div>
+      <div className="glass-card" style={{ padding: 16 }}>
+        <p className="eyebrow" style={{ marginBottom: 10 }}>Quick Navigation</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+          {["Dashboard", "Schools", "Registrations", "Keys", "Plans", "Audit Log", "Users", "System Alerts", "System Check", "Support"].map(v => (
+            <button key={v} className="tool-button" onClick={() => onViewChange?.(v)}>{v}</button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

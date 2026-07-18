@@ -377,15 +377,15 @@ function RoleWorkspace(props: WorkspaceProps) {
     case "secretary":
       return <SecretaryWorkspace view={props.view} data={props.data} onViewChange={props.onViewChange} />;
     case "bursar":
-      return <BursarWorkspace view={props.view} data={props.data} onShareFinance={props.onShareFinance} />;
+      return <BursarWorkspace view={props.view} data={props.data} onViewChange={props.onViewChange} onShareFinance={props.onShareFinance} />;
     case "librarian":
-      return <LibrarianWorkspace view={props.view} data={props.data} onShareRequestedBooks={props.onShareRequestedBooks} roleKey={props.role} />;
+      return <LibrarianWorkspace view={props.view} data={props.data} onViewChange={props.onViewChange} onShareRequestedBooks={props.onShareRequestedBooks} roleKey={props.role} />;
     case "headteacher":
       return <HeadteacherWorkspace view={props.view} data={props.data} onViewChange={props.onViewChange} onSendSms={props.onSendSms} />;
     case "teacher":
-      return <TeacherWorkspace view={props.view} data={props.data} onSendSms={props.onSendSms} />;
+      return <TeacherWorkspace view={props.view} data={props.data} onViewChange={props.onViewChange} onSendSms={props.onSendSms} />;
     case "parent":
-      return <ParentWorkspace view={props.view} data={props.data} session={props.session ?? null} />;
+      return <ParentWorkspace view={props.view} data={props.data} onViewChange={props.onViewChange} session={props.session ?? null} />;
     case "student":
       return <StudentWorkspace view={props.view} data={props.data} session={props.session ?? null} />;
     default:
