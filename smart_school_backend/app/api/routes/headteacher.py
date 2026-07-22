@@ -15,6 +15,7 @@ from app.models.user import User
 router = APIRouter(prefix="/headteacher", tags=["headteacher"])
 
 _HT_OR_ADMIN = (RoleId.HEADTEACHER, RoleId.ADMIN)
+_STAFF_ROLES = (RoleId.ADMIN, RoleId.TEACHER, RoleId.BURSAR, RoleId.SECRETARY, RoleId.LIBRARIAN, RoleId.ICT_ADMIN, RoleId.HEADTEACHER)
 
 
 # ── Staff list ────────────────────────────────────────────────────────────────
@@ -196,7 +197,7 @@ class LeaveDecision(BaseModel):
 def apply_leave(
     payload: LeaveCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(role_required(*_STAFF_ROLES)),
 ):
     """Any staff member submits a leave request."""
     if payload.end_date < payload.start_date:

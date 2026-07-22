@@ -22,7 +22,8 @@ export function SchoolDetailPage({ schoolId, onBack }: SchoolDetailPageProps) {
     const start = Date.now();
     try {
       if (type === "db") {
-        await apiRequest("/api/health");
+        const API_BASE_RAW = import.meta.env.VITE_API_URL || "https://sms-msku.onrender.com";
+        await fetch(`${API_BASE_RAW}/api/health`);
         setDiagResult(`DB Connection: OK (${Date.now() - start}ms)`);
       } else if (type === "api") {
         await apiRequest("/novara/dashboard/stats");

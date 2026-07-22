@@ -184,9 +184,13 @@ def get_school(
     row = db.execute(
         text("""
             SELECT s.id, s.name, s.email, s.phone, s.subscription_status, s.created_at,
+                   COALESCE(sp.name, 'N/A') as plan_name,
                    (SELECT COUNT(*) FROM users u WHERE u.school_id = s.id) as user_count,
                    (SELECT COUNT(*) FROM students st WHERE st.school_id = s.id) as student_count
-            FROM schools s WHERE s.id = :id
+            FROM schools s
+            LEFT JOIN school_subscriptions ss ON ss.school_id = s.id AND ss.status = 'active'
+            LEFT JOIN subscription_plans sp ON sp.id = ss.plan_id
+            WHERE s.id = :id
         """),
         {"id": school_id},
     ).one_or_none()
@@ -203,11 +207,11 @@ def get_school(
         "country": "Uganda",
         "timezone": "Africa/Kampala",
         "status": row[4] or "pending",
-        "plan_name": "N/A",
+        "plan_name": row[6],
         "subscription_expires": "",
         "api_keys_count": 0,
-        "total_users": row[6] or 0,
-        "total_students": row[7] or 0,
+        "total_users": row[7] or 0,
+        "total_students": row[8] or 0,
         "last_active": "",
         "created_at": row[5].isoformat() if row[5] else "",
     }
@@ -645,10 +649,10 @@ def generate_school_key(
 
     db.execute(
         text("""
-            INSERT INTO api_keys (school_id, key_hash, key_prefix, is_active, created_at)
-            VALUES (:sid, :kh, :kp, true, NOW())
+            INSERT INTO api_keys (school_id, key_hash, key_prefix, is_active, created_by_id, created_at)
+            VALUES (:sid, :kh, :kp, true, :uid, NOW())
         """),
-        {"sid": school_id, "kh": key_hash, "kp": key_prefix},
+        {"sid": school_id, "kh": key_hash, "kp": key_prefix, "uid": current_user.id},
     )
     db.commit()
 
@@ -870,6 +874,11 @@ def approve_registration(
     db.add(reg_key)
     db.flush()
     db.refresh(reg_key)
+
+    db.execute(
+        text("UPDATE registration_requests SET status = 'approved', updated_at = NOW() WHERE id = :id"),
+        {"id": request_id},
+    )
 
     db.commit()
 
