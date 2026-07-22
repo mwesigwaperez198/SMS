@@ -1332,52 +1332,6 @@ export async function downloadReceiptPDF(receiptId: number): Promise<void> {
   URL.revokeObjectURL(a.href);
 }
 
-// ─── Report Card Management ──────────────────────────────────
-
-export async function submitReportCard(payload: {
-  student_id: number;
-  academic_year: string;
-  term: string;
-  subject: string;
-  score: number;
-  grade: string;
-  teacher_remarks?: string;
-}): Promise<any> {
-  return apiRequest("/api/v1/report-cards/submit", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function approveReportCard(
-  reportCardId: number,
-  payload: { class_teacher_remarks?: string; head_teacher_remarks?: string } = {}
-): Promise<any> {
-  return apiRequest(`/api/v1/report-cards/${reportCardId}/approve`, {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export async function publishReportCard(reportCardId: number): Promise<any> {
-  return apiRequest(`/api/v1/report-cards/${reportCardId}/publish`, {
-    method: "POST",
-  });
-}
-
-export async function fetchStudentReportCards(studentId: number): Promise<any[]> {
-  return apiRequest(`/api/v1/report-cards/student/${studentId}`);
-}
-
-export async function fetchClassReportCards(
-  className: string,
-  academicYear: string,
-  term: string
-): Promise<any[]> {
-  const params = new URLSearchParams({ academic_year: academicYear, term });
-  return apiRequest(`/api/v1/report-cards/download-class/${encodeURIComponent(className)}?${params}`);
-}
-
 // ─── Fee Payment ─────────────────────────────────────────────
 
 export async function recordFeePayment(payload: {
